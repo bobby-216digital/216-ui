@@ -14,9 +14,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      # Newer npm (bundled with current Node 24) rejects this lockfile's
-      # optional @emnapi/* entries in `npm ci`, though nothing is wrong with
-      # it. 216-mono hit the same thing; pin the npm the lockfile was made with.
+      # Pinned to the npm the lockfile is made with. npm on macOS also leaves
+      # out the Linux-only transitive deps of optional wasm packages
+      # (@emnapi/*), which `npm ci` here then rejects; regenerate the lockfile
+      # on Linux (e.g. in a node:24 container) when that happens.
       - run: npm install -g npm@11.6.2
       - run: npm ci
       - run: npm run typecheck
