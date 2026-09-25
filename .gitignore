@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tgz
+.next/
+playground/.next/
+playground/next-env.d.ts
+*.tsbuildinfo
+.DS_Store

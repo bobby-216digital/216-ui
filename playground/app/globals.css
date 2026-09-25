@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* The components ship class names, not compiled utilities, so Tailwind has
+   to scan them to generate the utilities they use. A consumer points this at
+   node_modules/@216digital/ui/dist; the playground reads the sources. */
+@source "../../src";
+
+/* After the Tailwind import: the package's @layer site has to be declared
+   after Tailwind's layers to outrank them. */
+@import "../../src/styles/index.css";

@@ -1,0 +1,1984 @@
+/*
+ * @216digital/ui component and base styles.
+ *
+ * Import this AFTER `@import "tailwindcss"` (or import styles.css, which
+ * brings tokens.css with it). Everything below the MOTION block sits in the
+ * named layer `site`, and a named layer declared after Tailwind's own
+ * theme/base/components/utilities layers outranks all of them — which is what
+ * lets these bare-element rules (button, h1-h3, p, …) beat Tailwind's
+ * preflight, and why a Tailwind utility on an element these rules style is
+ * inert (several notes below record where that bit). Import it before
+ * Tailwind and the order flips: preflight wins and the page renders
+ * half-styled.
+ *
+ * The MOTION block is deliberately NOT layered. Its declarations are
+ * !important, and important declarations run the layer order in reverse, so
+ * moving it into `site` would change which reduced-motion overrides win
+ * against layered ones. It stays exactly where the site had it.
+ */
+
+/* MOTION — one blanket rule rather than a reduced-motion override on every
+   individual hover/reveal transition added below. Near-instant transitions
+   (not literally `none`) so nothing snaps to a jarringly different layout
+   mid-interaction; functionally indistinguishable from "no motion" for
+   anyone with prefers-reduced-motion set. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Without this, .reveal content below the fold would still start
+       opacity:0 and only reach opacity:1 once scrolled into view — the
+       *animation* would be instant (handled above), but a reduced-motion
+       user would still have to scroll to see it appear at all. This makes
+       it simply present from the start, full stop. */
+    .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+/*
+ * The named layer also matters for an editor that renders its own chrome as
+ * plain DOM next to a preview of these components (the 216-mono Puck editor
+ * does): the editor's unlayered CSS always beats anything in a named layer,
+ * per the Cascade Layers spec, regardless of specificity or load order, so
+ * these bare-element selectors can't clobber it. They only apply where
+ * nothing else claimed the property — inside the preview, everywhere.
+ *
+ * A consumer that keeps rules of its own in `@layer site` (216-mono does, for
+ * its skip links and Puck richtext rules) gets them merged into this layer,
+ * after everything here.
+ *
+ * Layering the import instead (`@import … layer(site)`) doesn't work with
+ * Tailwind: its postcss plugin rejects `@source` nested inside a layer.
+ */
+@layer site {
+
+/* GLOBALS */
+/* The page must never scroll sideways. This lives on the root element, not
+   on body: it is the root's overflow that gets propagated to the viewport,
+   so the same declaration on body has no effect on page scrolling (it was
+   tried). `clip` rather than `hidden` because hidden would make this a
+   scroll container, which breaks position:sticky descendants and changes
+   focus-scrolling behaviour. Backstop only — the real overflows are fixed
+   at source (.hero, .card min-width); anything that genuinely needs
+   horizontal scrolling still gets it from its own overflow-x:auto. */
+html {
+    overflow-x: clip;
+}
+
+body {
+    background-color: var(--primary-bg-color);
+    margin: 0;
+    padding: 0;
+    font-family: var(--primary-body-family);
+}
+
+header {
+    box-shadow: 0 0 10px 0 #000;
+    position: sticky;
+    top: 0;
+    z-index: 9999999;
+} 
+
+/* TEXT */
+
+p {
+    font-size: var(--primary-body-size);
+    font-family: var(--primary-body-family);
+    color: var(--primary-body-color);
+    line-height: var(--primary-body-spacing);
+    margin: 12px 0px;
+}
+
+p.secondary {
+    font-size: var(--secondary-body-size);
+    font-family: var(--secondary-body-family);
+    color: var(--secondary-body-color);
+    line-height: var(--secondary-body-spacing);
+}
+
+p.large {
+    font-size: var(--large-body-size);
+    font-family: var(--large-body-family);
+    color: var(--large-body-color);
+    line-height: var(--large-body-spacing);
+}
+
+p.subheading, .subheading {
+    font-size: var(--subheading-size);
+    font-family: var(--subheading-family);
+    font-weight: 400;
+    color: var(--subheading-color);
+    line-height: var(--subheading-spacing);
+}
+
+p.quote {
+    font-size: var(--quote-size);
+    font-family: var(--quote-family);
+    color: var(--quote-color);
+    line-height: var(--quote-spacing);
+}
+
+h1, .h1 {
+    font-size: var(--h1-size);
+    font-family: var(--h1-family);
+    color: var(--h1-color);
+    line-height: var(--h1-spacing);
+}
+
+h2, .h2 {
+    font-size: var(--h2-size);
+    font-family: var(--h2-family);
+    color: var(--h2-color);
+    line-height: var(--h2-spacing);
+    margin: 16px 0px;
+    /* 500, not the old 300 (too thin) or a heavier 700 (reads "corporate") —
+       confident without losing the friendly, hand-built feel. */
+    font-weight: 500;
+}
+
+.flex-center {
+	align-content: center;
+}
+
+@media screen and (max-width: 800px) {
+	h2, .h2 {
+		font-size: 24px;
+	}
+}
+
+/* The grey is a HEADING treatment — it's what puts "216digital" and
+   "Benefits" in a quieter tone inside an otherwise black h2, which is how
+   the comps draw them. Applied to bare <strong> as well, it made every
+   bold run in body copy render LIGHTER than the text around it: the
+   "Trustworthy Monitoring" / "Shopify" / "1. Automated Scan" labels that
+   open a list item, which every comp shows in full-contrast bold, came out
+   greyer than their own descriptions. Bold that de-emphasises is backwards,
+   and it also drops those labels to 4.0:1 where the body text they sit in
+   is 16:1.
+
+   So: the colour stays on headings, and bare <strong> keeps the weight and
+   inherits its colour like any other inline emphasis. */
+h2 strong, h3 strong {
+  color: var(--light-grey);
+}
+
+strong {
+  font-weight: 600;
+}
+
+h3, .h3 {
+    font-size: var(--h3-size);
+    font-family: var(--h3-family);
+    color: var(--h3-color);
+    line-height: var(--h3-spacing);
+}
+
+/* CONTROLS */
+button, .button, input[type='submit'] {
+    /* Gradient fill, but the text color stays --primary-button-font-color
+       (dark grey) — white text on either gradient endpoint fails WCAG AA
+       (see --gradient-primary above). Don't "fix" this by switching to
+       white text without re-checking contrast. */
+    background: var(--gradient-primary);
+    border: 2px solid var(--primary-button-bordercolor);
+    border-radius: var(--primary-button-radius);
+    margin: 12px 12px 12px 0px;
+    padding: var(--primary-button-padding);
+    color: var(--primary-button-font-color);
+    font-family: var(--primary-button-font-family);
+    cursor: pointer;
+    transition: transform var(--transition-base), box-shadow var(--transition-base),
+        background var(--transition-base), border-color var(--transition-base);
+}
+
+/* `.button` is applied to ButtonLink's <a> (see ButtonLink.tsx),
+   and an anchor's default display is `inline` — vertical margins have no
+   effect on inline elements, so the margin above was silently doing nothing
+   above/below every ButtonLink on the site (only its right-margin, which is
+   horizontal, ever showed). inline-block makes the vertical margin actually
+   apply, and also stops it from collapsing into a preceding element's own
+   bottom margin (e.g. a RichText paragraph/heading), which is the extra
+   breathing room that was missing. Scoped to just `.button`, NOT the bare
+   `button`/`input[type='submit']` tags above — those are natively
+   inline-block already, and setting `display` on literally every <button>
+   unlayered (this file's rules always beat a layered Tailwind utility
+   regardless of media query — see the CONTROLS note elsewhere in this file)
+   silently broke `hidden`/`md:hidden` on every real button on the site,
+   including the header's mobile menu toggle. */
+.button {
+    display: inline-block;
+    /* The bare `a` rule further down underlines every link, and `nav a`
+       cancels it with !important — so the header's "Contact Us" pill was
+       the ONLY button on the site without an underline through its label,
+       which is the designer's "buttons include underlines on text, but the
+       button in the navigation does not." Resolved in the direction the XD
+       comps show (no button anywhere has an underline) rather than by
+       underlining the nav one too. A class selector outranks the bare `a`
+       element selector, so this needs no !important of its own. */
+    text-decoration: none;
+}
+
+button:hover, .button:hover, input[type='submit']:hover {
+    background: var(--primary-button-hover-bgcolor);
+    border: 2px solid var(--primary-button-hover-bordercolor);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(225, 116, 14, .45);
+}
+
+button:focus-visible, .button:focus-visible, input[type='submit']:focus-visible {
+    outline: 2px solid var(--primary-accent-color);
+    outline-offset: 2px;
+}
+
+/* `background` (the shorthand), NOT `background-color` — the base button
+   rule above sets `background: var(--gradient-primary)`, which also sets
+   background-image. Overriding only background-color left that gradient
+   image layered on top of the white, so every secondary button on the site
+   rendered as an orange gradient pill and the only thing telling primary
+   and secondary apart was the border color. That is exactly the designer's
+   "Primary and secondary design buttons need to differ more visually. Only
+   hover is different other than the outline." — it was a CSS bug, not a
+   design decision. Third time the same shorthand trap has bitten this file;
+   see the identical note on .control-button below. */
+button.secondary, .button.secondary, input[type='submit'] .secondary {
+    background: var(--secondary-button-bgcolor);
+    border: 2px solid var(--secondary-button-bordercolor);
+    border-radius: var(--secondary-button-radius);
+    margin: var(--secondary-button-margin);
+    padding: var(--secondary-button-padding);
+    color: var(--secondary-button-font-color);
+    font-family: var(--secondary-button-font-family);
+    transition: transform var(--transition-base), box-shadow var(--transition-base),
+        background-color var(--transition-base), border-color var(--transition-base);
+}
+
+button.secondary:hover, .button.secondary:hover, input[type='submit'] .secondary:hover {
+    background: var(--secondary-button-hover-bgcolor);
+    border: 2px solid var(--secondary-button-hover-bordercolor);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(35, 31, 32, .18);
+}
+
+/* Buttons that control UI state — nav toggles, carousel pause/play, tab
+   switchers — rather than acting as a call to action. The `button` rule
+   above is deliberately opinionated for CTAs, so anything else needs to
+   opt out of it explicitly instead of inheriting an orange pill by
+   accident. Plain Tailwind utility classes (margin, padding, background,
+   border) can't do this override themselves — this file's hand-written
+   rules aren't wrapped in a Tailwind `@layer`, so they always beat a
+   utility class regardless of source order, hence a real CSS class here
+   instead of trying to fight it with more utilities. */
+.control-button {
+    /* `background` (shorthand), not `background-color` — the base button
+       rule now sets a gradient via `background`, which sets background-image
+       too. A background-color-only reset here would clear the color but
+       leave the gradient image layered on top, silently bringing the orange
+       pill straight back. */
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+    padding: 4px;
+    cursor: pointer;
+}
+
+/* The base `button:hover` rule sets four things, and this reset only ever
+   undid two of them — the lift and the orange glow carried straight through
+   to every control button on the site. On a tab strip that reads as the tab
+   trying to detach itself from its own underline; it was equally wrong on
+   the mobile menu toggle and the carousel pause control. A control button
+   is not a call to action, so it takes none of the CTA's motion. */
+.control-button:hover {
+    background: transparent;
+    border: 0;
+    transform: none;
+    box-shadow: none;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+nav a {
+    text-decoration: none !important;
+}
+
+a:visited {
+    color: var(--link-color);
+}
+
+input, select, textarea {
+    display: block;
+    border: 2px solid var(--input-border-color);
+    border-radius: var(--input-border-radius);
+    color: var(--input-text-color);
+    background-color: var(--input-background-color);
+    font-family: var(--primary-body-family);
+    margin: var(--input-margin);
+    padding: var(--input-padding);
+    width: calc(100% - 48px);
+}
+
+input[type='checkbox'] {
+    display: inline-block;
+}
+
+::placeholder {
+    color: var(--input-placeholder-color);
+}
+
+label {
+    display: block;
+    color: var(--input-label-color);
+    font-family: var(--primary-body-family);
+}
+
+label.checkbox {
+    display: inline-block;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Footer link lists (Footer.tsx). The links are inline elements
+   separated by <br>, and vertical padding on an inline box does not move the
+   lines apart — it paints outside the line box and overlaps the neighbours.
+   `inline-block` is what makes the padding count: the line box grows to the
+   inline-block's own height, so the 5px lands between the links instead of
+   on top of them. Not `display: block`, which would leave the <br>s adding
+   an empty line each.
+
+   5px against a 24px line-height, so 29px between links. Enough that a
+   four-item column reads as four items rather than a paragraph, without
+   opening the columns up into something that needs its own layout. */
+.footer-links a {
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+/* Hero.tsx's image column — matches the live site's `.img-wrapper img` /
+   `.hero-header .img-wrapper img` rules (the more specific one always wins
+   there, so this is that effective, combined behavior). */
+.img-wrapper img {
+    width: 100%;
+    height: auto;
+}
+
+/* FEATURE CARD (FeatureCard.tsx) icon accent variants — a soft
+   tint wash behind the icon rather than a solid fill, so it stays readable
+   under whatever colors the icon SVG itself already uses instead of risking
+   a clash. Stays in the warm palette (orange/umber) rather than a cool
+   accent. */
+.feature-icon {
+    background-color: var(--primary-bg-color);
+}
+
+.feature-icon-orange {
+    background-color: color-mix(in srgb, var(--secondary-accent-color) 15%, white);
+}
+
+.feature-icon-umber {
+    background-color: color-mix(in srgb, var(--tertiary-accent-color) 15%, white);
+}
+
+/* FEATURE CARD TITLE (FeatureCard.tsx) — was .subheading:
+   20px Roboto, weight 400, in grey. Against 16px Roboto body copy directly
+   underneath it, that is four pixels and a shade of grey apart, which is
+   the designer's "Bold H3? Close in size and style to body copy" on the
+   three-box rows. The heading font, real weight and full-contrast colour
+   make it read as the card's title.
+
+   Its own class rather than a change to .subheading, which has four other
+   consumers (Slider, PostCard, Callout, TableOfContents) where a 20px grey
+   line IS the intended treatment — it's a standfirst there, not a title.
+   Sized off --h3-size rather than a literal so a brand override moves it
+   with the rest of the type scale, but scaled down: a FeatureCard title
+   sits inside a card in a row of three, where the full 28px h3 crowds out
+   the copy it's introducing. */
+.card-title {
+    font-family: var(--h3-family);
+    font-size: calc(var(--h3-size) * 0.75);
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--h3-color);
+}
+
+/* PORTRAIT FEATURE CARD (FeatureCard.tsx) — /about/'s team
+   roster. The icon variant puts its heading in .subheading (20px grey) with
+   body-size copy under it, which inverts the hierarchy once that copy is a
+   job title: the role read darker and heavier than the person's own name.
+   Nothing else about the tile changes. */
+.feature-portrait h3 {
+    color: var(--h3-color);
+}
+
+/* Decorative glow behind Hero.tsx's image — static (no animation/parallax;
+   the accessibility pass on the modernization plan flagged that as overkill
+   for this site), on-brand orange tones instead of the cool blue/purple
+   glows competitor sites use. Suppressed below --mobile rather than scaled,
+   since a soft background glow isn't worth the risk of odd cropping on a
+   small viewport. */
+/* .hero-glow is deliberately inset -10% so the halo bleeds past the image
+   column. Nothing clipped it, so every page with a Hero rendered ~28px wider
+   than the viewport and the whole site carried a horizontal scrollbar.
+
+   `clip` rather than `hidden`: hidden would make this a scroll container,
+   which changes how position:sticky and focus scrolling behave inside the
+   hero. clip contains the bleed and nothing else. Hand-written rather than
+   Tailwind's overflow-x-clip utility because the utility silently failed to
+   generate — the class name sat flush against a `${` interpolation in the
+   className template literal, so the scanner tokenised it as
+   `overflow-x-clip$` and discarded it. Worth remembering: a Tailwind class
+   immediately followed by `${` is not detected. */
+.hero {
+    overflow-x: clip;
+}
+
+/* The gradient is given an EXPLICIT size rather than left to default to
+   `farthest-corner`: sized to the corner diagonal, the circle's radius is
+   set by the longest distance, so `transparent 70%` lands well outside the
+   near edges and the gradient is still painting where its own box ends.
+
+   THE BLEED IS VERTICAL ONLY (inset: -12% 0), and that is what stops the
+   hard edge. An earlier version used `inset: -10%` all round and sized the
+   stops so they went transparent inside the GLOW's box — but the glow's box
+   is not what clips. `.hero` clips at its own edge, 12% earlier, and the
+   image column's outer edge is flush with it, so a horizontal bleed is
+   always cut mid-gradient: measured at 1440px, the tint ran to x=1387 and
+   stepped straight to #fff at x=1388, a seam down the hero's full height
+   exactly on the page gutter.
+
+   Left and right both, not just the right: Hero's `flip` puts the image
+   column on the left on seven pages, and below --md the hero is a single
+   column, so the image column is flush against BOTH gutters there and the
+   glow was clipped on both sides. With no horizontal overflow at all there
+   is nothing for the clip to cut on either side.
+
+   What's left is the vertical bleed, which is unclipped (overflow-x: clip
+   leaves overflow-y visible) and is where the halo actually reads anyway.
+   Radii are 46%/55% from a centre at 56%/42%, so the transparent stop lands
+   ~32% of the width from that centre — a clear margin inside both side
+   edges even after blur(24px) spreads it. Keeping .hero's clip matters
+   regardless: it's the guard that stops anything else in a hero handing the
+   whole site a horizontal scrollbar again. */
+.hero-glow {
+    position: absolute;
+    inset: -12% 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(46% 55% at 56% 42%, rgba(247, 148, 32, .35), rgba(225, 116, 14, .12) 45%, transparent 70%);
+    filter: blur(24px);
+}
+
+@media (max-width: 720px) {
+    .hero-glow {
+        display: none;
+    }
+}
+
+/* Matches the live site's `.card` block utility class — used inconsistently
+   there (some FeatureCards/FlexSections/columns opted in via the block
+   editor's "additional CSS class" field, some didn't), so it's exposed as a
+   per-component toggle here rather than assumed. Padding/margin/max-width
+   are intentionally left out of this class (unlike the live site's version)
+   — those are layout concerns already handled per-component via Tailwind,
+   and copying them verbatim risks fighting each component's own flex
+   sizing/spacing rather than just adding the visual surface. */
+/* FLEX SECTION (FlexSection.tsx)
+
+   Cards are `flex: 1` with a zero basis, so they pack as many per row as
+   will fit — five parallel cards at 1440px became five ~250px columns, tall
+   and thin and wildly uneven in height. A floor on the basis makes the row
+   wrap instead: at 1400px five cards lay out 3 + 2, with the trailing pair
+   growing to fill.
+
+   `min()` rather than a bare length so the floor collapses to the container
+   on small screens — a fixed 22rem would overflow a 360px viewport. And
+   note this is the opposite of `min-width: 0`, which was tried here and
+   broke wrapping entirely (see the note below).
+
+   Deliberately NOT `min-width: 0` on the children. That looks like the
+   textbook fix for a flex child overflowing, but here it fights flex-wrap:
+   with min-width:0 a row of FeatureCards shrinks to ~100px columns instead
+   of wrapping, which broke /web-development/, /ppc-marketing/ and
+   /ada-title-ii-and-section-508/ on mobile (they were fine before). Left as
+   a comment so the next person doesn't re-apply it. */
+.flex-section-cards > .card {
+    flex-basis: min(22rem, 100%);
+}
+
+.card {
+    border-radius: var(--card-radius);
+    background-color: var(--primary-bg-color);
+    /* Softer, more diffused than the old single hard-offset drop-shadow —
+       a layered box-shadow instead of filter: drop-shadow() so the blur/
+       spread can be tuned independently of the shape. This is the single
+       shared surface behind Card.tsx AND every Puck slot that wraps content
+       in a Card, so this change reaches every page — see the full-site
+       visual QA note in the modernization plan. */
+    box-shadow: 0 1px 2px rgba(35, 31, 32, .04), 0 16px 32px -12px rgba(35, 31, 32, .14);
+    flex: 1;
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+/* Card's "peach" surface — a pulled-out aside on a white section, where a
+   second white panel would just read as more page. Only the fill changes;
+   the radius, padding and shadow stay the card's, so the two surfaces are
+   obviously the same component. */
+.card-peach {
+    background-color: var(--secondary-bg-color);
+}
+
+.card:hover, .card:focus-within {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px rgba(35, 31, 32, .06), 0 24px 48px -12px rgba(35, 31, 32, .22);
+}
+
+/* SLIDER (Slider.tsx) */
+
+@keyframes logo-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.logo-scroll-track {
+    animation: logo-scroll 30s linear infinite;
+}
+
+.logo-scroll-track.paused {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .logo-scroll-track {
+        animation: none;
+    }
+}
+
+/* The pause/play control's own margin — a Tailwind `mt-*` utility on this
+   button would lose to .control-button's unlayered `margin: 0` above, so
+   the spacing has to live here instead. */
+.logo-scroll-pause {
+    margin-top: 16px;
+}
+
+/* ACCORDION (Accordion.tsx) — Tailwind's `list-none` on <summary>
+   covers Firefox's marker, but WebKit/Blink draw the disclosure triangle via
+   this pseudo-element regardless of list-style, so it needs hiding directly. */
+summary::-webkit-details-marker {
+    display: none;
+}
+
+/* An explicit surface, not just a shadow. These rows had no background of
+   their own, so they took whatever was behind them — which looked right
+   for the FAQ accordions sitting on white pages, and stopped looking right
+   the moment Steps' collapsible mode put a set of them on a peach band,
+   where each row became peach-on-peach separated only by its shadow. The
+   comps draw them as white cards wherever they appear. It also fixes the
+   hover, which mixed to near-white and so jumped from peach to white on a
+   tinted band rather than shading the row it was over. */
+.accordion-item {
+    background-color: var(--primary-bg-color);
+    transition: background-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.accordion-item:hover, .accordion-item:focus-within {
+    background-color: color-mix(in srgb, var(--secondary-accent-color) 6%, white);
+}
+
+/* STAT ROWS (Badges.tsx, variant="stat")
+   The `<strong>46%</strong><br>label` rows were rendering the number at
+   body size, so a row of headline statistics read as small print. The
+   number becomes the focal point and the label drops to the secondary
+   type scale. Each item gets a min-width so three or five of them wrap
+   into even rows instead of one orphan. */
+.badge-stat > * {
+    min-width: 180px;
+    flex: 0 1 auto;
+}
+
+.badge-stat strong {
+    display: block;
+    font-family: var(--h2-family);
+    font-size: 40px;
+    line-height: 1.1;
+    font-weight: 500;
+    /* --button-orange, not --primary-accent-color. The brand orange on the
+       peach these stat rows sit on is 2.82:1; at 40px the bar is 3:1 for
+       large text, so it failed WCAG 1.4.3. The darker orange the secondary
+       button already uses measures 4.14:1 there — the same token, for the
+       same reason it exists. */
+    color: var(--button-orange);
+    margin-bottom: 4px;
+}
+
+.badge-stat br {
+    display: none;
+}
+
+/* The label is whatever text follows the <strong> in the same item. */
+.badge-stat > * {
+    font-size: var(--secondary-body-size);
+    line-height: var(--secondary-body-spacing);
+    color: var(--secondary-body-color);
+    max-width: 22ch;
+}
+
+/* A row of one is a pulled-out figure, not a row — /radar/'s "Fewer than
+   5%" and /demand-letter-response/'s "$4,000+" both pair a short number
+   with a full sentence of qualifying detail, and 22ch wraps that sentence
+   into a narrow ribbon down the middle of whatever box holds it. The cap
+   exists to keep SIBLING stats reading as even columns, which is exactly
+   what a lone item has none of. */
+.badge-stat > :only-child {
+    max-width: none;
+}
+
+/* CHIP ROWS (Badges.tsx, variant="chip") — the "✓ WCAG 2.1 ·
+   ✓ ADA Title II · ✓ Section 508 · ✓ Unruh Act" divider bands on
+   /ada-title-ii-and-section-508/ and /radar/. The designer's note is
+   "space out more, up type size, remove padding top and bottom, slim" —
+   it was reading as four body-size words crowded together in a tall band,
+   rather than as a divider rule across the page. Larger type and a much
+   wider gap, with the band's height coming down to compensate so the whole
+   thing still reads as a rule rather than a section.
+
+   The py-2 the component applies is a Tailwind utility, so it loses to this
+   layered rule (see the layer note at the top of this file) — no need to
+   change the component's class list to take the padding off. */
+.badge-chip {
+    column-gap: clamp(2rem, 5vw, 4.5rem);
+    row-gap: 12px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.badge-chip strong {
+    font-size: var(--large-body-size);
+    line-height: 1.3;
+    font-weight: 500;
+}
+
+/* DIVIDED STAT ROW (Badges.tsx, surface="divided") — /ada/'s
+   five-figure row. The gap the component sets is replaced by real padding
+   on each item plus a hairline between, so the numbers read as five
+   separate figures sharing one surface instead of one run-on line.
+
+   `> * + *` rather than a border on every item: the first item in the row
+   must not carry a leading rule. Items that wrap onto a second line do get
+   one, which is the correct signal anyway — a stat mid-row is still a stat
+   mid-row, and the row only wraps below the breakpoint where the border is
+   dropped entirely (see the media query). */
+.badge-divided {
+    column-gap: 0;
+    row-gap: 24px;
+}
+
+/* Equal cells that fill the row, rather than cells sized by their own text.
+   .badge-stat's `flex: 0 1 auto` plus `max-width: 22ch` sizes each item to
+   its LABEL, which left the 40px numerals wider than the boxes holding them
+   — "10,000+" and "~$10,000" spilled past the hairlines on either side,
+   while the labels underneath wrapped to three lines and the row as a whole
+   stopped short of the card's right edge. A shared basis with grow gives
+   five even columns, the numerals sit inside them, and the rules land where
+   the divisions actually are.
+
+   The basis stays at the 180px floor rather than 0 so the row still wraps on
+   a narrow screen instead of shrinking the cells to slivers. */
+.badge-divided > * {
+    flex: 1 1 180px;
+    max-width: none;
+    padding-inline: clamp(1rem, 2.5vw, 2.25rem);
+}
+
+.badge-divided > * + * {
+    border-left: 1px solid color-mix(in srgb, var(--dark-grey) 14%, transparent);
+}
+
+/* Below the point where five stats can share a line, they stack — and a
+   left-hand rule on a stacked item points nowhere. */
+@media (max-width: 900px) {
+    .badge-divided > * + * {
+        border-left: 0;
+    }
+}
+
+/* CARD STAT ROW (Badges.tsx, surface="cards") — the comps'
+   three discrete tiles on /demand-letter-response/. .badge-stat's own
+   `max-width: 22ch` has to go here: it sizes the TEXT, which is right for
+   a bare row, but on a card it leaves the label wrapping narrowly inside a
+   much wider surface. The basis floor is the same idea as .flex-section's
+   — three tiles wrap 2 + 1 rather than shrinking to slivers. */
+.badge-cards > * {
+    flex: 1 1 min(260px, 100%);
+    max-width: none;
+}
+
+/* TESTIMONIAL (Testimonial.tsx) — reuses the existing
+   --quote-* type tokens (via the shared .quote class) rather than
+   introducing a second quotation type scale. No surface of its own: the
+   card look comes from wrapping it in a Card block, same as FeatureCard.
+   Deliberately no decorative “ ” glyphs, in CSS or in the content — the
+   left accent rule carries the "this is a quotation" signal instead, which
+   keeps the stored quote byte-identical to the source record it has to be
+   diffed against (see the note on `quote` in Testimonial.tsx). */
+/* 24px between the quote, the attribution, the provenance note and the
+   link row — the designer's "add spacing between quote, customer name,
+   permission and links". At 16px those four parts sat close enough that
+   the attribution read as the quote's last line and the note as the
+   attribution's second line, which is the opposite of what the note is
+   for: it has to be visibly a separate statement about the quote, not part
+   of it. The tighter gaps WITHIN each part (2px in the attribution, 12px
+   between paragraphs of one quote) stay as they are, so widening this one
+   groups the parts rather than just loosening everything. */
+.testimonial {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin: 0;
+    /* Was stretching to the full width of whatever card held it — ~130
+       characters per line for the quote and ~185 for the source note, which
+       made a testimonial read like a paragraph of fine print. */
+    max-width: 62ch;
+    /* Centred, because the Card that holds it is a FlexSection child and so
+       stretches to the full row width — a 62ch quote pinned to the left of a
+       1400px card looked like a layout error rather than a pull quote. */
+    margin-inline: auto;
+}
+
+/* See the note on `align` in Testimonial.tsx — inside a column that is
+   already close to the quote's own measure, the auto margins only open a
+   gap between the column's left edge and the orange rule. */
+.testimonial-left {
+    margin-inline: 0;
+}
+
+.testimonial-quote {
+    margin: 0;
+    padding-left: 20px;
+    border-left: 3px solid var(--secondary-accent-color);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.testimonial-quote p {
+    margin: 0;
+    /* A pull quote should outrank the body copy around it — but 22px against
+       16px was enough of a jump that on the case study page, where three
+       long quotations sit under three short intros, the quotations read as
+       the body text and the surrounding prose as the caption. 18px still
+       outranks the copy; the italic is what the comps use to mark the
+       quotation, and it does more of that work than size alone.
+
+       Italic is presentation only — the stored text is untouched, so the
+       quote stays diffable against the source record character for
+       character (see the note on `quote` in Testimonial.tsx). */
+    font-size: 18px;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--primary-body-color);
+}
+
+.testimonial-attribution {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* <cite> defaults to italic in every browser; the attribution line reads as
+   a name here, not a cited work's title. */
+.testimonial-attribution cite {
+    font-style: normal;
+    font-weight: 700;
+    font-family: var(--primary-body-family);
+    color: var(--primary-body-color);
+}
+
+.testimonial-attribution p {
+    margin: 0;
+}
+
+/* Provenance, not a disclaimer to lead with: it matters that it is there and
+   checkable, but it should sit below the attribution rather than compete
+   with it. */
+.testimonial-note {
+    font-style: italic;
+    /* The flex gap above already separates this from the attribution; the
+       extra 4px on top of it re-closed part of the gap this rule is meant
+       to open. */
+    margin-top: 0;
+    max-width: 52ch;
+}
+
+/* The client's mark, in its own column beside the quotation (see
+   Testimonial.tsx). `align-self` is load-bearing rather than tidiness: its
+   parent is a flex container, so the default `align-items: stretch` would set
+   the image's cross size to the full width and the height then squashes the
+   logo flat — `width: auto` cannot win that, because stretch is setting the
+   used width rather than leaving it auto. Stacked above the quote below
+   768px, where a 240px logo column would leave the quote in a sliver. */
+.testimonial-logo {
+    align-self: flex-start;
+    height: 40px;
+    width: auto;
+    max-width: 100%;
+}
+
+@media (min-width: 768px) {
+    .testimonial-with-logo {
+        /* Room for the logo column on top of the quote's own 62ch measure,
+           rather than taking the quote down to a third of the band. */
+        max-width: calc(62ch + 288px);
+    }
+
+    .testimonial-body {
+        display: flex;
+        align-items: center;
+        gap: 48px;
+    }
+
+    /* A 240px-wide column, with the logo letterboxed inside a fixed 240x96
+       box rather than simply set to 240px wide. Width alone only balances
+       logos that happen to share an aspect ratio: Emerson and Friends is
+       3.2:1 and renders 74px tall at that width, Door County Coffee is 1.7:1
+       and rendered 143px — near enough twice, side by side in the same row.
+       max-height plus object-fit: contain bounds both axes without
+       distorting either mark, and it costs the wide logo nothing, since it
+       never reaches the cap. */
+    .testimonial-with-logo .testimonial-logo {
+        flex: 0 0 240px;
+        width: 240px;
+        height: auto;
+        max-height: 96px;
+        object-fit: contain;
+        align-self: center;
+    }
+
+    .testimonial-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        flex: 1;
+    }
+}
+
+/* TABS (Tabs.tsx) — selected-state styling keys off the same
+   `aria-selected` attribute the component sets for a11y, so there's nothing
+   separate to keep in sync. Padding lives here rather than a Tailwind
+   `px-*`/`py-*` utility for the same unlayered-vs-layered reason as the
+   pause control's margin above. The underline itself is .tab-indicator, a
+   separately-rendered, JS-measured span (see Tabs.tsx) rather than a static
+   border on the button — that's what lets it slide smoothly between tabs
+   instead of just snapping. */
+.tab-button {
+    padding: 8px 16px;
+    transition: color var(--transition-base);
+}
+
+/* The affordance a tab actually wants: the label warms toward the selected
+   colour, so hovering previews what selecting it will look like. Not applied
+   to the already-selected tab, which is that colour and would signal nothing.
+   --button-orange rather than --primary-accent-color because this is 14-16px
+   label text, where the accent token is 3.13:1 and fails AA; the button-
+   scoped orange is 4.59:1. */
+.tab-button:hover:not([aria-selected="true"]) {
+    color: var(--button-orange);
+}
+
+.tab-button[aria-selected="true"] {
+    font-weight: 700;
+    /* Same swap as .badge-stat strong above, and a clearer failure: 16px
+       bold is NOT large text (that starts at 18.66px bold), so the brand
+       orange's 3.13:1 on white was measured against the full 4.5:1. The
+       darker orange is 4.59:1. It is also already this element's own hover
+       colour, so selected and hovered now agree instead of shifting shade. */
+    color: var(--button-orange);
+}
+
+.tab-indicator {
+    position: absolute;
+    /* `top` comes from the measurement (see Tabs.tsx) rather than being
+       pinned to the container's bottom, so the marker follows the selected
+       tab onto whichever row it wrapped to. */
+    height: 2px;
+    background-color: var(--primary-accent-color);
+    transition: left var(--transition-base), width var(--transition-base);
+}
+
+/* SMALL PRINT (RichText.tsx, tone="note") — sourcing lines and
+   "results vary" qualifiers. Declared on the block wrapper and inherited by
+   every paragraph and link inside it, because the paragraphs themselves
+   cannot carry it: Puck's richtext schema drops class/font-size/color on
+   the way through (see the note on `tone`). The same four tokens p.secondary
+   uses, so the two treatments can't drift apart.
+
+   The `p` selector is needed as well as the wrapper: the bare `p` rule in
+   this file sets font-size and colour directly, and a declaration on an
+   ancestor never beats one that matches the element itself. */
+.rich-text-note {
+    font-size: var(--secondary-body-size);
+    font-family: var(--secondary-body-family);
+    color: var(--secondary-body-color);
+    line-height: var(--secondary-body-spacing);
+}
+
+/* NAV DROPDOWN (Header.tsx) — hover/focus affordances for the
+   submenu panel. Hand-written rather than Tailwind utilities because these
+   are :hover/:focus-visible state pairs on a repeated element, which is the
+   same reason .tab-button and .accordion-item live here.
+
+   The highlight is the peach background token, not a saturated orange: the
+   link text is --dark-grey, and dark-on-peach is a comfortable contrast
+   (the same pairing .accent-mark and the peach section bands already use),
+   whereas #f79420 as a background would need light text to stay legible.
+
+   `margin-inline: -12px` against the matching padding keeps the link text
+   on exactly the left edge it sat on before the padding existed, and lets
+   the highlight bleed into the panel's own p-6 so a hovered row reads as a
+   full-width band rather than a floating pill.
+
+   Desktop only, and measured rather than assumed: the mobile drawer's inner
+   container carries p-4, so -12px of it left the highlight running 4→386 in
+   a 390px viewport — four pixels off the screen edge, which reads as a bug
+   rather than a full-bleed row. Without the negative margin the padding
+   indents these links 12px past their parent nav item instead, which is
+   the right signal on mobile anyway, where the submenu is an in-flow
+   accordion nested under its own heading. 768px because that is where the
+   component itself switches between the two layouts (Tailwind's `md`). */
+.nav-submenu-link {
+    padding: 8px 12px;
+    border-radius: 12px;
+    transition: background-color var(--transition-base);
+}
+
+@media (min-width: 768px) {
+    .nav-submenu-link {
+        margin-inline: -12px;
+    }
+}
+
+.nav-submenu-link:hover,
+.nav-submenu-link:focus-visible {
+    background-color: var(--secondary-bg-color);
+}
+
+/* The promo card's own affordance. Deliberately smaller than .card:hover's
+   4px lift — this sits inside a floating panel that is itself only 200ms
+   old, so a big movement reads as the panel still settling. The image
+   scale needs the wrapper's overflow:hidden to crop against, which is why
+   the wrapper carries the radius and the img is a plain child.
+   prefers-reduced-motion is handled globally at the top of this file. */
+.nav-promo {
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.nav-promo:hover,
+.nav-promo:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(35, 31, 32, .06), 0 12px 24px -8px rgba(35, 31, 32, .18);
+}
+
+.nav-promo-image {
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.nav-promo-image img {
+    display: block;
+    width: 100%;
+    transition: transform var(--transition-base);
+}
+
+.nav-promo:hover .nav-promo-image img,
+.nav-promo:focus-visible .nav-promo-image img {
+    transform: scale(1.03);
+}
+
+/* SECTION (Section.tsx) — several migrated pages carried a
+   colored WordPress Group block (the live site's `.wp-block-group.has-
+   background`) that had no equivalent Puck block at all, so the color
+   silently disappeared in the migration (e.g. /radar/'s light-blue
+   "Speak with a Professional" band). `.full-bleed` breaks a section out to
+   the viewport edge regardless of `main`'s own `max-w-(--gutter)` clamp —
+   it's measured off the viewport (100vw), not any ancestor — while Section
+   itself re-applies that same --gutter max-width to its inner content so
+   the *content* still lines up with the rest of the page; only the
+   background bleeds. */
+/* VERTICAL RHYTHM BETWEEN CONTENT BLOCKS
+
+   Puck renders a page's content array as the direct children of <main>, and
+   spacing used to be whatever each component happened to bring. Four of
+   them (Hero, Section, Accordion, Steps) carried py-(--section-spacing) —
+   ~74px a side, so ~148px where two of them met — while FlexSection and
+   Columns brought py-6 and everything else between 0 and 24px, and a
+   .block-flow opt-out class existed purely to stop those paddings stacking
+   on top of the container's own gap. Same spacing was reachable three
+   different ways depending on which blocks happened to be adjacent.
+
+   Now every page-level block renders as a <section> (see the components in
+   src/) and carries NO vertical spacing of its own; these two rules
+   are the only thing that sets the space around one. Margins, not padding,
+   so adjacent sections collapse to a single gap rather than summing — two
+   sections are --section-spacing apart, never double.
+
+   The nested case is the second rule's reason for existing: a section
+   dropped into another block's slot (Card > FlexSection, Section >
+   FlexSection, Tabs > Hero, Hero > Accordion all exist in the content)
+   sits inside that block's own padding, where a full --section-spacing
+   reads as a hole. Blog posts wrap their blocks in <article> (see
+   blog.config.tsx's root render), so they're named explicitly rather than
+   dropping to the nested value.
+
+   Interior padding is a separate concern and stays on the components that
+   need it: a card's own p-6/py-8 (Card, LogoRow, Slider, Columns' tint),
+   Hero's inner p-6, and .bg-section-* below for a coloured band, which
+   needs its padding INSIDE the colour where a margin would leave the text
+   flush against the band's edge. */
+section {
+    margin-block: var(--block-gap);
+}
+
+.page-blocks > section,
+.page-blocks > article > section {
+    margin-block: var(--section-spacing);
+}
+
+/* Top-level blocks that aren't sections — a run of RichText, a bare Card,
+   a ButtonLink — still need the smaller rhythm between each other. Pairs
+   involving a section are left out: that section's own margin above already
+   covers the boundary, and adding a margin-top here would win on
+   specificity and shrink it back to --block-gap. */
+.page-blocks > *:not(section) + *:not(section) {
+    margin-top: var(--block-gap);
+}
+
+/* Rhythm between blocks stacked inside one column (Columns.tsx).
+   `.page-blocks > *` supplies this at page level, but a column's children
+   are not page-level children, so a run of blocks inside a column had only
+   RichText's own 12px between them — on the case study page a section
+   heading ended up sitting directly against the bottom of the quotation
+   above it. `.rich-text > :first-child` zeroes a block's own leading margin
+   on the assumption that the container owns the spacing, which is exactly
+   what was missing here.
+
+   --block-gap, the same token the page-level rule uses, so a column reads
+   with the same rhythm as the page around it. */
+/* `> * > * + *`, not `> * + *`: Puck's slot renders its own bare wrapper
+   div inside the column, so the blocks are grandchildren of the column, not
+   children of it. Targeting the column's direct children matched only that
+   single wrapper and did nothing. */
+.columns-column > * > * + * {
+    margin-top: var(--block-gap);
+}
+
+/* Small print annotates whatever is directly above it, so it keeps the
+   close spacing rather than taking the full block rhythm — a sourcing note
+   a whole block-gap below its own paragraph reads as a separate statement
+   about the section instead of a footnote to that sentence. */
+.columns-column > * > .rich-text-note {
+    margin-top: 12px;
+}
+
+/* Readable line length. The site's --gutter is 1400px, which at the 16px
+   body size is ~167 characters per line — about double what is comfortable,
+   and it was the single biggest legibility problem on the long-form pages.
+
+   800px (~95 characters at the 16px body size) rather than the 68ch this
+   started at: 68ch measured out to ~560px, which read as a narrow ribbon of
+   text stranded in the middle of a 1400px page — the surrounding whitespace
+   drew more attention than the copy. 800px is wider than the classic 45-75
+   character guidance, and wider than the closest comparables (Level Access
+   ~57ch, AudioEye ~75ch), but it's the width the page composition wants;
+   if prose ever starts reading as too wide, raise the prose body size
+   before narrowing this back down.
+
+   Centred rather than left-hugging, because a RichText block holds its own
+   headings alongside its paragraphs: constraining the whole block keeps the
+   heading and the prose sharing one left edge, and works whether the
+   content inside is left-aligned or centred. Opt-in via RichText's `width`
+   field — see the note there for why it isn't the default. */
+.measure {
+    max-width: var(--measure);
+    margin-inline: auto;
+}
+
+/* EYEBROW / PREHEADER — five blocks across the site open with a short
+   centred lead-in line above their centred h2 ("Why Should You Care About Web
+   Accessibility?", "Learn What Matters Most to You", ...). Puck's richtext
+   has no per-paragraph style control, so that line was emitting a plain <p>
+   and rendering identically to body copy: the block read as three stacked
+   paragraphs instead of a section header. Matched structurally with :has()
+   rather than asking editors to tag it, so it applies to every block
+   already written that way and to any future one, with no content change
+   and nothing to keep in sync.
+
+   The centring is load-bearing, not incidental: a bare
+   `p:first-child:has(+ h2)` matches 475 blocks repo-wide, because virtually
+   every blog post opens with an intro paragraph before its first h2 — some
+   12,000 characters long. Uppercasing those would be a disaster. A CENTRED
+   lead-in above a CENTRED heading is only ever the marketing pages'
+   section-intro pattern; long-form body prose is left-aligned throughout.
+   `[style*="center"]` reads the inline text-align Puck's richtext writes
+   onto block tags (it strips `style` from inline tags but keeps it here —
+   see the note on .accent-mark). One left-aligned eyebrow exists too
+   (/216digit-training/'s "Focused Training for Every Role") but it was
+   hand-authored with its own inline color/font-weight, which would beat
+   anything declared here — left alone deliberately rather than half-styled.
+
+   Was --tertiary-accent-color (the umber). The designer's note is that the
+   umber reads as BROWN and brown isn't in the brand language — correct, and
+   it was only ever chosen here because the orange tokens fail AA at this
+   size on both white and peach. Grey is the third option and the one asked
+   for: --medium-grey is 6.27:1 on white and 5.65:1 on peach, so it clears
+   AA more comfortably than the umber did without introducing a hue at all.
+   Don't swap this for an orange token — that's the trap this rule already
+   walked out of once. */
+/* Hero's preheader (Hero.tsx) takes the same treatment by
+   applying .eyebrow directly — it used to carry .subheading, which is 20px
+   Roboto in grey and read as a different thing entirely from the richtext
+   preheader two blocks below it. The zeroed margin is what gives Hero its
+   tighter spacing: it had p's own 12px on both sides on top of the hero
+   grid's gap-3, which pushed the preheader away from the h1 it belongs to.
+   The remaining 4px is inert for the richtext case, where the neighbouring
+   h2's own margin-top is zeroed below. Accordion's and Steps' preheaders
+   take .eyebrow too — every preheader on the site now goes through this one
+   rule. .subheading is left to the five consumers that are headings rather
+   than preheaders (Slider, FeatureCard, PostCard, Callout,
+   TableOfContents), where the 20px grey treatment is still right. */
+.eyebrow {
+    font-family: var(--secondary-font-family);
+    font-size: var(--secondary-body-size);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--medium-grey);
+    margin: 0 0 4px;
+}
+
+/* 100vw includes the vertical scrollbar's width while the containing block
+   does not, so a full-bleed section overhangs by exactly the scrollbar
+   width — the residual few pixels of horizontal scroll left on the site
+   after the hero glow was clipped. The clip on body below contains it;
+   this stays 100vw because that is what makes the bleed reach both edges. */
+.full-bleed {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+}
+
+.bg-section-peach {
+    background-color: var(--secondary-bg-color);
+}
+
+.bg-section-blue {
+    background-color: var(--tertiary-bg-color);
+}
+
+/* A coloured band's breathing room has to be padding, inside the colour —
+   the global section margin above sits outside it, where it would leave the
+   band's own text flush against the edge of the tint. Scoped to sections so
+   the footer's peach strip (a div, with its own p-6) is untouched. */
+section.bg-section-peach,
+section.bg-section-blue,
+section.bg-section-warm {
+    padding-block: var(--section-spacing);
+}
+
+/* SCAN CTA (ScanCta.tsx) — the mid-page "put your website to
+   the test" band. `warm` is the comps' peach-into-orange wash, used where
+   the band is the page's closing conversion prompt rather than one more
+   tinted section; `peach` (the flat token) stays the default so it matches
+   every other peach band on the page by default.
+
+   The gradient stops at a 70% mix rather than the full orange. Dark text on
+   --primary-accent-color at full strength is 7.02:1, so legibility is not
+   what sets the ceiling — holding it short of the pure token is what keeps
+   the band reading as a wash behind the page rather than as a solid orange
+   panel, and leaves the full token meaning "this is the accent" wherever it
+   does appear at strength. Light text is never an option on any part of
+   this band: the palest end is a near-white peach. */
+.bg-section-warm {
+    background: linear-gradient(
+        110deg,
+        var(--secondary-bg-color) 0%,
+        color-mix(in srgb, var(--primary-accent-color) 70%, var(--secondary-bg-color)) 100%
+    );
+}
+
+/* SECTION BACKGROUND IMAGE (Section.tsx) — the comps' designed
+   bands, where the artwork IS the band rather than an image beside the copy.
+   Painted from 768px up only: these are wide (4:1) graphics that carry their
+   illustration on one side and leave the other empty for the heading, so
+   `cover` on a phone crops away the empty half and slides the illustration
+   under the body copy. Below that breakpoint the section's own
+   .bg-section-* tint shows through on its own, which is what the band
+   looked like before the artwork existed.
+
+   The URL arrives as --section-bg-image from the component, because an
+   inline background-image would outrank this media query and paint at every
+   width regardless.
+
+   This rule has to sit AFTER .bg-section-* below it, and that is not
+   cosmetic: .bg-section-warm sets its gradient with the `background`
+   shorthand, which writes background-image too, so at equal specificity
+   whichever is declared last wins. Declared first, the artwork silently
+   lost to the gradient — the same shorthand trap that had secondary
+   buttons rendering as orange pills. */
+@media (min-width: 768px) {
+    /* The artwork paints on a pseudo-element rather than as this element's
+       own background-image, because .bg-section-warm supplies its colour as a
+       linear-gradient — an IMAGE, not a background-color — so setting
+       background-image here replaced the tint outright and left the band
+       transparent everywhere the artwork did not reach. On its own layer it
+       composites over whichever tint the section carries. */
+    .section-bg-image {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .section-bg-image::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image: var(--section-bg-image);
+        background-repeat: no-repeat;
+        /* Fills the band, cropping as needed. Right for a texture like the
+           homepage's icon band, which the comp shows bleeding off every edge
+           — sized to its own width instead, the artwork ran out before the
+           band did and its bottom edge showed as a pale seam. */
+        background-size: cover;
+        background-position: center;
+    }
+
+    /* The illustration variant. These graphics are ~4:1 with the artwork on
+       one side, and the band is whatever height its copy makes it — 2.6:1 on
+       /radar/ — so `cover` scales them up by half and drags the illustration
+       inward across the text. Sized to the width instead, anchored bottom,
+       with the section's own tint showing above. */
+    .section-bg-image-width::before {
+        background-size: 100% auto;
+        background-position: right bottom;
+    }
+
+    /* And keep the copy out of that illustration: a Hero with no image of its
+       own centres its measure, which put the body copy straight over the
+       storefront on /radar/. Clamped and pushed left, it sits in the half the
+       artwork leaves for it. Only for this variant — a texture band's centred
+       heading should stay centred. */
+    .section-bg-image-width .measure {
+        margin-inline: 0;
+        max-width: min(52%, var(--measure));
+    }
+}
+
+
+/* The address field and its submit button sit on one line where there is
+   room for it, and stack below that — `wrap` rather than a breakpoint so it
+   responds to the column it is actually in (these bands are two-column on
+   desktop and one-column on mobile, so a viewport breakpoint would be
+   measuring the wrong thing). */
+.scan-cta-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+/* `flex: 1 1 260px` and not a width: the field takes the leftover space on
+   one line, and the 260px basis is what makes it drop to its own line
+   rather than shrink to a few characters. The input element's own
+   `--input-margin` (16px block) would otherwise fight the flex gap and
+   misalign it against the button. */
+.scan-cta-field {
+    flex: 1 1 260px;
+    margin: 0;
+}
+
+.scan-cta-field input {
+    width: 100%;
+    margin: 0;
+}
+
+/* Available to assistive technology, absent from the visual design — for
+   labels the comps show only as a placeholder. Clip-path plus a 1px box
+   rather than `display: none`/`visibility: hidden`, both of which remove
+   the element from the accessibility tree as well and so would defeat the
+   entire point. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+    border: 0;
+}
+
+/* SLIM BAND (Section.tsx, spacing="slim") — a tinted strip that
+   acts as a rule across the page rather than as a section of it. The full
+   --section-spacing on both sides put 160px of padding around the single
+   line of the ✓ WCAG 2.1 / ADA Title II / Section 508 / Unruh Act divider,
+   which is the designer's "remove padding top and bottom, slim".
+
+   Qualified with the element and parent for the same reason the overlap
+   rules are: it has to outrank `section.bg-section-peach`. */
+.page-blocks > section.section-slim,
+.page-blocks > article > section.section-slim {
+    padding-block: clamp(1rem, 1.5vw, 1.5rem);
+}
+
+/* OVERLAPPING SECTION (Section.tsx, `overlap`) — the comps let
+   a section and the block above it share an edge instead of stacking clear
+   of each other.
+
+   The pull-up is cancelled by matching padding, so the section's own content
+   stays exactly where it was and only the surface travels upward. --overlap
+   is a local custom property purely so the two halves cannot drift apart.
+
+   Which element ends up on top is decided by z-index, not source order: a
+   tinted section paints its own background, so without one of the two being
+   lifted the later sibling simply covers the earlier one.
+
+   `:has()` already carries the eyebrow rules in this file, so the sibling
+   selector below is no new baseline requirement. */
+/* Selector weight matters more than usual here: `.page-blocks > section`
+   sets margin-block and `section.bg-section-peach` sets padding-block, and
+   a bare `.section-overlap` loses to both — the first attempt at this rule
+   changed nothing at all on the page. Qualifying with the element and the
+   parent puts it above each of them. */
+.page-blocks > section.section-overlap,
+.page-blocks > article > section.section-overlap {
+    --overlap: 3.5rem;
+    /* --section-spacing is subtracted as well as --overlap because adjacent
+       margins collapse: the block above already contributes its own
+       --section-spacing below itself, and a negative margin here collapses
+       against it to `positive + negative`. Pulling up by --overlap alone
+       therefore only closed the gap to --section-spacing minus --overlap
+       (measured: a 24px gap where an overlap was wanted). Cancelling the
+       neighbour's contribution first makes --overlap the distance actually
+       travelled past the edge. */
+    margin-top: calc(-1 * (var(--section-spacing) + var(--overlap)));
+}
+
+/* "behind": only the SURFACE travels. The padding puts back exactly what the
+   margin took away, so the band's own content sits where it always did and
+   just the tint reaches up behind the block above — which then keeps its
+   own surface and sits across it.
+
+   "front" deliberately has no such compensation: there it is the content
+   that has to move, so the card rides up onto the band. Compensating both
+   was the first attempt, and it moved the section's invisible box while
+   leaving the card exactly where it started. */
+.page-blocks > section.section-overlap-behind,
+.page-blocks > article > section.section-overlap-behind {
+    padding-top: calc(var(--section-spacing) + var(--overlap));
+}
+
+.page-blocks > *:has(+ .section-overlap-behind),
+.page-blocks > article > *:has(+ .section-overlap-behind) {
+    position: relative;
+    z-index: 1;
+}
+
+/* "front": this section rides over the block above it instead. */
+.section-overlap-front {
+    position: relative;
+    z-index: 1;
+}
+
+/* STEPS (Steps.tsx) — the live site's numbered timeline: a
+   vertical line running the full height of the list, behind a column of
+   round numbered badges. Reproduced with a plain absolutely-positioned line
+   (needs the <ol> below it to be `position: relative`) and a circle on each
+   step's own index, rather than the live site's CSS-counter/::before
+   version — simpler to keep in sync with the component's real data. Not
+   pixel-matched to the live site's exact offsets; close enough reads the
+   same and is far easier to maintain. */
+.step-line {
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background-color: var(--light-grey);
+}
+
+.step-number {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 100px;
+    background-color: var(--dark-grey);
+    color: #fff;
+    font-weight: 700;
+}
+
+/* ACCENT MARK — a "highlighter" treatment for a headline word (see
+   Hero.tsx's accentLastWord), reusing the existing peach token rather than
+   a new color. box-decoration-break keeps the highlight box looking right
+   if the marked text ever wraps across a line. Only usable from real JSX
+   (as Hero.tsx does) — Puck's richtext sanitizer strips the `style`
+   attribute from inline tags (<strong>/<span>) even though it keeps it on
+   block tags (<p>/<h1-6>), and strips <span> entirely regardless. Don't try
+   to apply this class via a hand-authored `style="..."` attribute inside a
+   RichText/Accordion answer's HTML string — it won't survive. */
+.accent-mark {
+    background-color: var(--secondary-bg-color);
+    padding: 0.05em 0.35em;
+    border-radius: 6px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
+/* FOCUS — every interactive element gets a visible ring on keyboard/AT
+   focus. :focus-visible (not :focus) so it only shows for keyboard/AT
+   navigation, not on every mouse click. */
+a:focus-visible, button:focus-visible, .button:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible,
+summary:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--primary-accent-color);
+    outline-offset: 2px;
+}
+
+/* HERO BANNER (HeroBanner.tsx) — a full-bleed photograph with the
+   page heading over it, as distinct from Hero, whose image sits in a column
+   beside the text.
+
+   THE SCRIM IS A CONTRAST FLOOR, not a mood. Text on a photograph has no
+   guaranteed contrast ratio: whatever pixel happens to be behind a letter
+   decides it, and on this image alone the sky is near-white while the river
+   is near-black. The white wash puts a floor under the whole text column so
+   the ratio is a property of the CSS rather than of the photograph, which is
+   what makes dark-text-on-a-photo shippable instead of a gamble. Measured on
+   the Cleveland image at 1440: 12.5:1 at the darkest point under the text.
+
+   It is a gradient rather than a flat wash so the picture survives: strongest
+   across the text column, falling away to the right where nothing has to be
+   read. Below --md the column is the full width, so it becomes a flat wash —
+   there is no "right" left to fade into.
+
+   The heading keeps the site's normal dark type and peach .accent-mark rather
+   than going white-on-dark. White text would need the photo darkened to the
+   point of being a texture, and would make this the only light-on-dark
+   surface on the site outside the footer's copyright bar. */
+.hero-banner {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    min-height: clamp(360px, 40vw, 540px);
+    overflow: clip;
+}
+
+/* The banner opens the page, so it sits against the header rather than
+   floating below it — the page-level section rhythm would otherwise put
+   --section-spacing of white between the two.
+
+   :first-of-type, NOT :first-child. The first child of .page-blocks is a
+   JSON-LD <script> on every page that emits structured data, so :first-child
+   silently never matched and the gap stayed. :first-of-type is scoped to
+   <section> elements, which is also the behaviour we want: a banner further
+   down a page keeps its rhythm. */
+.page-blocks > .hero-banner:first-of-type {
+    margin-top: 0;
+}
+
+.hero-banner-image {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Above centre: the skyline is in the upper half, and centring crops it
+       in favour of the foreground car park. */
+    object-position: center 40%;
+}
+
+.hero-banner-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.88);
+}
+
+/* Re-establishes the page gutter the .full-bleed escape gave up — same
+   values as <main> in app/layout.tsx, so the heading lines up with every
+   other heading on the page. */
+.hero-banner-inner {
+    width: 100%;
+    max-width: var(--gutter);
+    margin-inline: auto;
+    padding: var(--section-spacing) 16px;
+}
+
+.hero-banner-content {
+    display: grid;
+    gap: 12px;
+    max-width: 640px;
+}
+
+/* The secondary button is a bordered outline with no fill, so over a
+   photograph its label sits on whatever the picture happens to be. Measured
+   here at 3.92:1 against the scrimmed skyline — under 1.4.3's 4.5:1, and not
+   a number the CSS controls, since it moves with the image.
+
+   A white fill makes it deterministic: the label is then on --primary-bg-color
+   at 4.59:1, exactly as it is everywhere else on the site. It also stops the
+   photograph showing through the button, which read as an accident rather
+   than as a style. */
+.hero-banner .button.secondary {
+    background-color: var(--primary-bg-color);
+}
+
+@media (min-width: 768px) {
+    .hero-banner-inner {
+        padding-inline: 32px;
+    }
+
+    .hero-banner-scrim {
+        background: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 255, 255, 0.9) 42%,
+            rgba(255, 255, 255, 0.5) 68%,
+            rgba(255, 255, 255, 0.22) 100%
+        );
+    }
+}
+
+/* CARD LOGO (the Card block's optional logoSrc) — a client's own mark above
+   the card's content. Used on each /case-studies/ page's "at a glance" card.
+
+   Bounded on BOTH axes deliberately. The two logos are nothing like the same
+   shape — Emerson and Friends is 600x185 (3.2:1), Door County Coffee is
+   356x212 (1.7:1) — so a max-width alone would have made one twice the
+   height of the other in the same slot. Capping the height too means each is
+   scaled by whichever limit it hits first, and the two cards read as a pair.
+
+   It lives here rather than as Tailwind utilities on the element because the
+   pair of maxima IS the rule; splitting it across two utility classes hides
+   why either number is what it is. */
+.card-logo {
+    display: block;
+    max-width: 160px;
+    max-height: 64px;
+    width: auto;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+/* Card logoLayout: "beside" — the same row the Testimonial block uses on
+   /reviews/, so a teaser card on /case-studies/ and a quote card on
+   /reviews/ read as the same object: 240px logo column, 48px gap, logo
+   letterboxed into 240x96 and vertically centred against the copy.
+
+   The numbers are repeated from .testimonial-with-logo rather than shared
+   through a custom property, because they are not one decision used twice —
+   they are two components that currently agree. Pulling them into a token
+   would make a future change to one silently change the other.
+
+   Below --md this rule doesn't apply at all, so the card stacks: logo, then
+   copy, exactly as the "above" layout already does. */
+@media (min-width: 768px) {
+    .card-logo-beside {
+        display: flex;
+        align-items: center;
+        gap: 48px;
+    }
+
+    .card-logo-beside .card-logo {
+        flex: 0 0 240px;
+        width: 240px;
+        max-width: none;
+        max-height: 96px;
+        object-fit: contain;
+        margin-bottom: 0;
+    }
+
+    .card-logo-main {
+        flex: 1;
+    }
+}
+
+/* SCROLL REVEAL (Reveal.tsx) — the hook adds `.reveal`, then
+   `.reveal-visible` once the element is in view. The hidden state only
+   ever exists because the hook's JS added it moments before observing (see
+   that file), so a thrown JS error or disabled JS always fails open to
+   fully visible content, never stuck hidden. Opacity/transform only — never
+   visibility/pointer-events — so content that's technically already in the
+   DOM is never blocked from click or screen-reader access while "hidden." */
+.reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 500ms ease, transform 500ms ease;
+}
+
+.reveal-visible {
+    opacity: 1;
+    transform: none;
+}
+
+
+/* COMPARISON TABLE (ComparisonTable.tsx) — the three-tier
+   market-position chart on /ada/.
+
+   `border-collapse: separate` rather than the usual `collapse`, because the
+   middle column is a highlighted panel with its own 3px border and rounded
+   corners: collapsed borders merge a cell's border with its neighbour's and
+   drop border-radius on cells entirely, which is exactly the effect this
+   needs to keep. Row rules are therefore a border-bottom per cell, not a
+   shared one. */
+.comparison-table-scroll {
+    overflow-x: auto;
+    /* Room for the table's shadow and the highlighted column's overhang,
+       both of which sit outside the table's own box and would otherwise be
+       clipped by the scroll container. */
+    padding: 4px 4px 30px;
+}
+
+/* The focus ring for the keyboard-scrollable region (see the note in
+   ComparisonTable.tsx). Matches the site's other focus treatment rather
+   than relying on the UA default, which is invisible against peach. */
+.comparison-table-scroll:focus-visible {
+    outline: 3px solid var(--primary-accent-color);
+    outline-offset: 2px;
+    border-radius: var(--card-radius);
+}
+
+.comparison-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    /* Three columns of real copy ("Risk Mitigation / Pragmatic") plus a row
+       label reduce to unreadable slivers well before phone width. Below this
+       the wrapper scrolls instead — with the row labels pinned (see the
+       media query at the end), so a scrolled-to column still has something
+       to be a column OF. */
+    min-width: 600px;
+    background-color: var(--primary-bg-color);
+    border-radius: var(--card-radius);
+    /* Same layered shadow as .card — one surface language across the site. */
+    box-shadow: 0 1px 2px rgba(35, 31, 32, .04), 0 16px 32px -12px rgba(35, 31, 32, .14);
+    text-align: center;
+}
+
+.comparison-table caption {
+    caption-side: top;
+    font-family: var(--secondary-font-family);
+    font-size: var(--secondary-body-size);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--medium-grey);
+    text-align: center;
+    /* The bottom padding clears the highlighted column's cap, which
+       overhangs the table by 18px into exactly this space — and the cap sits
+       directly under a centred caption, so this is the only thing keeping
+       them apart. */
+    padding: 0 0 30px;
+}
+
+/* The caption sits inside the horizontal scroller (a <caption> has to be a
+   child of its <table>), so at the widths where the table scrolls it scrolls
+   out of view with it — and the caption is the one thing that says what the
+   columns are being compared FOR. Pinning the inner span keeps it readable
+   at any scroll position; on a wide screen there's nothing to scroll and the
+   rule does nothing. Sticky on the <caption> itself is unreliable, hence the
+   span. */
+.comparison-table caption > span {
+    position: sticky;
+    left: 0;
+    display: inline-block;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 20px clamp(0.75rem, 1.5vw, 1.5rem);
+    vertical-align: middle;
+    border-bottom: 1px solid color-mix(in srgb, var(--primary-accent-color) 20%, transparent);
+}
+
+.comparison-table tbody tr:last-child th,
+.comparison-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+/* Column heads. The Sen face + medium grey is the same treatment the
+   .subheading token carries, reached through explicit properties here
+   because these are <th>s, which the reset has already given their own
+   weight and alignment. */
+.comparison-table thead th {
+    font-family: var(--secondary-font-family);
+    font-size: clamp(1.125rem, 1.4vw, 1.5rem);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--medium-grey);
+    padding-block: 28px;
+}
+
+/* Row labels: the axis, so quieter and flush left against the values they
+   introduce. */
+.comparison-table tbody th {
+    font-family: var(--primary-font-family);
+    font-size: var(--secondary-body-size);
+    font-weight: 700;
+    color: var(--medium-grey);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.comparison-table tbody tr:nth-child(odd) td,
+.comparison-table tbody tr:nth-child(odd) th {
+    background-color: color-mix(in srgb, var(--secondary-bg-color) 45%, transparent);
+}
+
+.comparison-value {
+    display: block;
+    font-size: var(--primary-body-size);
+    color: var(--light-grey);
+    line-height: 1.35;
+}
+
+/* The qualifier under a figure — "(4 Figures)", "(Results vary…)". Small,
+   but never the small print that hides a condition: the conditions that
+   qualify an outcome claim live here and in the note block under the table,
+   not in a footnote nobody reaches. */
+.comparison-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--light-grey);
+}
+
+/* THE HIGHLIGHTED COLUMN — us. A bordered panel running the full height of
+   the table, overhanging it top and bottom so it reads as sitting in front
+   of the other two rather than as a third peer. */
+.comparison-table .comparison-ours {
+    border-left: 3px solid var(--primary-accent-color);
+    border-right: 3px solid var(--primary-accent-color);
+    background-color: color-mix(in srgb, var(--secondary-accent-color) 8%, #fff);
+}
+
+.comparison-table tbody tr:nth-child(odd) td.comparison-ours {
+    background-color: color-mix(in srgb, var(--secondary-accent-color) 16%, #fff);
+}
+
+/* THE OVERHANG — the panel's ends stand proud of the table above and below,
+   which is the comp's signal that this column is the answer rather than a
+   third peer. It has to be pseudo-elements: a table cell ignores `margin`
+   outright, and extra `padding` on one cell only grows the whole row (every
+   cell in a row shares its height), so neither can make one column taller
+   than the table. Each pseudo-element carries the rounded cap and the side
+   borders that would otherwise sit on the cell itself, so the border runs
+   unbroken from the cap into the column — hence no border-top on the header
+   cell and no border-bottom on the last one.
+
+   `background-color: inherit` rather than a repeated colour: both caps then
+   track whatever fill their own cell ends up with, including the striping
+   below.
+
+   The -3px insets are load-bearing: an absolutely positioned element
+   resolves left/right against its containing block's PADDING box, which
+   here sits inside the cell's own 3px side borders. At `left/right: 0` each
+   cap came out 3px narrower per side than the column it caps, so the border
+   visibly jogged inward at all four corners. -3px pulls the cap's border
+   box back out onto the cell's. */
+.comparison-table thead .comparison-ours,
+.comparison-table tbody tr:last-child .comparison-ours {
+    position: relative;
+}
+
+.comparison-table thead .comparison-ours::before,
+.comparison-table tbody tr:last-child .comparison-ours::after {
+    content: "";
+    position: absolute;
+    left: -3px;
+    right: -3px;
+    height: 18px;
+    background-color: inherit;
+    border: 3px solid var(--primary-accent-color);
+}
+
+.comparison-table thead .comparison-ours::before {
+    top: -18px;
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+}
+
+.comparison-table tbody tr:last-child .comparison-ours::after {
+    bottom: -18px;
+    border-top: 0;
+    border-radius: 0 0 12px 12px;
+}
+
+.comparison-table .comparison-ours .comparison-value {
+    font-family: var(--secondary-font-family);
+    font-size: clamp(1.0625rem, 1.2vw, 1.25rem);
+    font-weight: 700;
+    color: var(--dark-grey);
+}
+
+.comparison-table .comparison-ours .comparison-note {
+    color: var(--medium-grey);
+}
+
+.comparison-logo {
+    display: block;
+    width: 100%;
+    max-width: 240px;
+    height: auto;
+    margin-inline: auto;
+}
+
+/* If the table does overflow (large text, or a zoom level whose CSS width
+   lands just above the stack breakpoint), an unpinned row-label column
+   scrolls straight out of view, leaving columns of figures with nothing
+   saying which figure is the cost and which the timeline. The background has
+   to be opaque to sit over the scrolling cells; both values are the same
+   colours the stripe already paints over the table's white, so this is a
+   no-op at widths where nothing scrolls. */
+.comparison-table tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--primary-bg-color);
+}
+
+.comparison-table tbody tr:nth-child(odd) th {
+    background-color: color-mix(in srgb, var(--secondary-bg-color) 45%, #fff);
+}
+
+/* THE STACKED RENDERING — one card per offering, for widths where three
+   columns of copy cannot coexist. See the note in ComparisonTable.tsx for
+   why this is a second rendering rather than the same table restyled: only
+   one of the two is ever in the DOM's accessibility tree, because the other
+   is display:none, so neither has to fake semantics the other owns. */
+.comparison-stack {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .comparison-table-scroll {
+        display: none;
+    }
+
+    .comparison-stack {
+        display: grid;
+        gap: 20px;
+    }
+}
+
+.comparison-stack-caption {
+    text-align: center;
+    font-family: var(--secondary-font-family);
+    font-size: var(--secondary-body-size);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--medium-grey);
+    margin: 0;
+}
+
+.comparison-stack-card {
+    padding: 20px;
+    border-radius: var(--card-radius);
+    background-color: var(--primary-bg-color);
+    box-shadow: 0 1px 2px rgba(35, 31, 32, .04), 0 16px 32px -12px rgba(35, 31, 32, .14);
+}
+
+/* Same two signals the highlighted column carries in the table — the 3px
+   accent border and the warmer fill — so the two renderings say "this one
+   is ours" the same way. */
+.comparison-stack-ours {
+    border: 3px solid var(--primary-accent-color);
+    background-color: color-mix(in srgb, var(--secondary-accent-color) 10%, #fff);
+}
+
+.comparison-stack-head {
+    font-family: var(--secondary-font-family);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--medium-grey);
+    text-align: center;
+    margin: 0 0 4px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--primary-accent-color) 20%, transparent);
+}
+
+/* Label left, value right — the same reading order as the table's rows, so
+   the two renderings aren't two different mental models. */
+.comparison-stack-card dl {
+    display: grid;
+    grid-template-columns: minmax(4.5rem, auto) 1fr;
+    column-gap: 16px;
+    margin: 0;
+}
+
+.comparison-stack-card dt,
+.comparison-stack-card dd {
+    margin: 0;
+    padding: 14px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--primary-accent-color) 20%, transparent);
+}
+
+.comparison-stack-card dl > dt:last-of-type,
+.comparison-stack-card dl > dd:last-of-type {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.comparison-stack-card dt {
+    font-family: var(--primary-font-family);
+    font-size: var(--secondary-body-size);
+    font-weight: 700;
+    color: var(--medium-grey);
+}
+
+/* The values are centred in the table because they sit under a column head
+   that centres them; in a card they're flush against their own label, where
+   centring would just float them away from it. */
+.comparison-stack-card dd {
+    text-align: left;
+}
+
+.comparison-stack-ours .comparison-value {
+    font-family: var(--secondary-font-family);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--dark-grey);
+}
+
+.comparison-stack-ours .comparison-note {
+    color: var(--medium-grey);
+}
+
+.comparison-stack .comparison-logo {
+    max-width: 200px;
+}
+
+} /* end @layer site */

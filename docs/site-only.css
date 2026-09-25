@@ -1,0 +1,240 @@
+/*
+ * The CSS that stays in 216-mono's app/globals.css at the cutover — every rule
+ * from the old globals.css that is about the site rather than the design
+ * system. Paste it after `@import "@216digital/ui/styles.css"`, INSIDE an
+ * `@layer site { … }` block, so it merges into the package's layer after
+ * everything the package declares. Extracted verbatim from 216-mono 6980c3e;
+ * the parity check confirmed that appending these to the end of the layer
+ * changes no cascade outcome. See docs/site-cutover.md, step 4.
+ *
+ * Three groups: the skip links (app/layout.tsx), rules keyed to Puck's
+ * RichText wrapper markup (`.rich-text`), and the WordPress-compat
+ * `.has-medium-font-size` the Footer's headings carry.
+ */
+
+/* Matches WordPress's `.has-medium-font-size` block utility class (from
+   --wp--preset--font-size--medium: 20px), reused as-is in Footer.tsx. */
+/* The footer's headings (packages/ui/Footer.tsx, the only consumer of this
+   WordPress-era class) — 20px type inheriting the h2 rule's 40px
+   line-height, a ratio of 2.0, which read as a heading floating in its own
+   empty band. 1.3 unitless matches the ratio --h3-spacing uses at 28px, and
+   being unitless it survives a change to the font size.
+
+   The line-height has to live here rather than as a Tailwind `leading-*`
+   utility on the element: `h2` is styled by a bare element selector inside
+   `@layer site`, and a named layer declared after the Tailwind import beats
+   every utility class regardless of specificity (see the layer note at the
+   top of this file). The markup did carry `leading-6`, which never applied
+   — the class was in the HTML and the rule was in the stylesheet, and the
+   cascade discarded it silently. Second time a Tailwind class has failed
+   quietly on this codebase for a structural reason rather than a typo; the
+   first was the scanner dropping `overflow-x-clip` next to a `${`. */
+.has-medium-font-size {
+    font-size: var(--large-body-size);
+    line-height: 1.3;
+}
+
+/* The richtext wrapper is why this can't be a Tailwind text-sm on the tile:
+   the role lands inside .rich-text as a <p>, which the layered `p` rule
+   above already sizes and colours (see the @layer site note at the top of
+   this file — these rules beat Tailwind's utilities). */
+.feature-portrait .rich-text p {
+    font-size: var(--secondary-body-size);
+    color: var(--secondary-body-color);
+    line-height: var(--secondary-body-spacing);
+}
+
+/* RICH TEXT (packages/ui/RichText.tsx) — Puck's own RichTextEditor wraps
+   resolved richtext content in a stable `.rich-text` classname (see the
+   note in puck.config.tsx); Tailwind's preflight strips ul/ol's default
+   list-style and spacing, and nothing restored it until now, so bulleted/
+   numbered content from the editor rendered as plain unmarked paragraphs. */
+.rich-text ul {
+    list-style: disc;
+    padding-left: 1.5em;
+}
+
+.rich-text ol {
+    list-style: decimal;
+    padding-left: 1.5em;
+}
+
+.rich-text li {
+    margin: 4px 0;
+}
+
+/* CHECK LIST (packages/ui/RichText.tsx, list="check") — the comps' orange
+   ticked rows. `list-style-type` with a string plus a coloured ::marker,
+   rather than a ✓ typed into the content: the glyph stays presentational,
+   so it can take the accent colour without dragging the text with it and
+   without being announced as a word before every item.
+
+   The orange is used as a graphic here, not as text — 3.13:1 on white,
+   which clears the 3:1 that WCAG 1.4.11 asks of a non-text element, while
+   the item's own text carries the meaning at full contrast. */
+.rich-text-checks .rich-text ul {
+    list-style-type: "✓";
+    padding-left: 1.75em;
+}
+
+.rich-text-checks .rich-text ul li {
+    padding-left: 0.4em;
+    margin-bottom: 12px;
+}
+
+.rich-text-checks .rich-text ul li::marker {
+    color: var(--primary-accent-color);
+    font-weight: 700;
+}
+
+/* Prose rhythm inside Puck's richtext wrapper. Puck renders resolved
+   richtext into its own .rich-text container (see the note in
+   puck.config.tsx); until now nothing in here targeted it, so multi-heading
+   long-form blocks had no separation between a heading and the paragraph
+   above it. Scoped to .rich-text so it can't affect hand-written markup. */
+/* A single long-form RichText block can hold several sections (the vendor
+   guide has ten h2s in one block), so the heading itself has to carry the
+   separation that --block-gap gives between blocks. */
+.rich-text > h2 {
+    margin-top: 48px;
+}
+
+.rich-text > h3 {
+    margin-top: 32px;
+}
+
+.rich-text > :first-child {
+    margin-top: 0;
+}
+
+/* Same idea at the other end, so a RichText block's own pb-3 (see
+   RichText.tsx) is the whole of the space below its last line rather than
+   12px on top of a trailing paragraph margin. */
+.rich-text > :last-child {
+    margin-bottom: 0;
+}
+
+/* The eyebrow belongs TO the heading, so it overrides the 48px separation
+   .rich-text > h2 carries for the multi-section long-form case above. */
+.rich-text > p[style*="center"]:first-child:has(+ h2[style*="center"]) + h2 {
+    margin-top: 0;
+}
+
+/* ACCENT RULE — a short gradient bar marking where each prose section
+   starts. Scoped to .measure so it only affects blocks that opted into the
+   readable column (the long-form pages); a full-width RichText is usually a
+   lone centred heading, where a bar would read as decoration rather than
+   structure. Centred when the heading is, which is detected off the inline
+   `text-align` Puck's richtext writes onto block tags (it strips `style`
+   from inline tags but keeps it here — see the note on .accent-mark). */
+.measure .rich-text > h2::before {
+    content: "";
+    display: block;
+    width: 48px;
+    height: 4px;
+    margin-bottom: 16px;
+    border-radius: 2px;
+    background: var(--gradient-primary);
+}
+
+.measure .rich-text > h2[style*="center"]::before {
+    margin-inline: auto;
+}
+
+/* No bar where an eyebrow already marks the start of the section — one
+   marker per heading, not two. Two shapes qualify: an eyebrow written as a
+   centred paragraph inside the richtext (the historical case), and one
+   supplied through RichText's own `eyebrow` prop, which renders outside the
+   `.rich-text` wrapper and so cannot be reached by the first selector. */
+.measure .rich-text > p[style*="center"]:first-child:has(+ h2[style*="center"]) + h2::before,
+.measure.has-eyebrow .rich-text > h2:first-child::before {
+    content: none;
+}
+
+/* SKIP LINKS (app/layout.tsx) — "Skip to content" / "Skip to footer".
+
+   position: fixed, not absolute. Absolute would place them at the top of the
+   DOCUMENT, so shift-tabbing back to them from halfway down a long page
+   would move focus to something parked off-screen above the viewport, with
+   nothing visible to show for it. Fixed keeps them relative to the viewport,
+   so they surface wherever the reader happens to be.
+
+   Moved out of view with translateY rather than `display: none`, `left:
+   -9999px` or the .visually-hidden clip: the first removes them from the
+   accessibility tree (and from the tab order, which defeats the point), and
+   an off-screen element that is still focusable makes some screen magnifiers
+   chase focus to a coordinate with nothing at it.
+
+   z-index has to clear the header's, which is the bare `header` rule near the
+   top of this file at 9999999 — NOT the `z-50` on Header.tsx's className. A
+   rule in this layer beats any Tailwind utility (see the note at the top of
+   the file), so the utility is inert and reading it gives the wrong number;
+   z-60 looked right and put the link underneath the logo. */
+.skip-link {
+    position: fixed;
+    /* Inset a little so the focus ring the rule above draws at
+       outline-offset: 2px isn't clipped by the top and left edges of the
+       viewport — a focus indicator that's half off-screen is most of the
+       way to not having one. The hidden transform is -200%, not -110%,
+       because that inset would otherwise leave a sliver showing. */
+    top: 6px;
+    left: 6px;
+    z-index: 10000000;
+    transform: translateY(-200%);
+    padding: 12px 20px;
+    background-color: var(--primary-bg-color);
+    /* The label is --primary-body-color, not the brand orange: orange on
+       white is 3.13:1, under the 4.5:1 WCAG 1.4.3 needs for 16px text. The
+       orange stays as the border, where it's a non-text cue and 1.4.11's
+       3:1 applies instead. Same trap the --primary-button-font-color note
+       near the top of this file already records for buttons. */
+    color: var(--primary-body-color);
+    border: 2px solid var(--primary-accent-color);
+    border-bottom-right-radius: 8px;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* :focus, not :focus-visible. These exist only to be reached by keyboard, and
+   a skip link that stays hidden because the UA decided the focus wasn't
+   "visible enough" is a skip link that does nothing. */
+.skip-link:focus {
+    transform: translateY(0);
+}
+
+/* The destinations. Both are containers rather than controls, focused only
+   as the result of activating a clearly-labelled link, so the ring the rule
+   above would otherwise draw around an entire page region reads as a
+   rendering fault rather than as information — the scroll jump is the
+   feedback. The links themselves keep their own focus style.
+
+   scroll-margin-top clears the sticky header (top-0, ~76px), which would
+   otherwise sit over the first heading the reader was sent to. */
+#main-content,
+#site-footer {
+    scroll-margin-top: 96px;
+}
+
+#main-content:focus,
+#main-content:focus-visible,
+#site-footer:focus,
+#site-footer:focus-visible {
+    outline: none;
+}
+
+.rich-text-note .rich-text p {
+    font-size: var(--secondary-body-size);
+    font-family: var(--secondary-body-family);
+    color: var(--secondary-body-color);
+    line-height: var(--secondary-body-spacing);
+}
+
+.rich-text > p[style*="center"]:first-child:has(+ h2[style*="center"]) {
+    font-family: var(--secondary-font-family);
+    font-size: var(--secondary-body-size);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--medium-grey);
+    margin: 0 0 4px;
+}

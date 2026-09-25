@@ -1,0 +1,14 @@
+{
+  // Plain tsc, one output file per source file, and deliberately no bundler:
+  // tsc leaves each file's 'use client' directive where it is, where tsup and
+  // friends strip or hoist it unless configured, which silently turns a
+  // client component into a server one in the consumer.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
