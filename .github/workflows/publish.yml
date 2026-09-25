@@ -1,0 +1,43 @@
+name: Publish
+
+# Release: bump "version" in package.json, add its CHANGELOG.md entry, merge,
+# then tag that commit `v<version>` and push the tag.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # Same pin as ci.yml, for the same lockfile reason.
+      - run: npm install -g npm@11.6.2
+      - run: npm ci
+
+      # A tag that disagrees with package.json would publish a version nobody
+      # meant to release. Fail before anything reaches the registry.
+      - name: Check the tag matches package.json
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $version" >&2
+            exit 1
+          fi
+          grep -q "^## $version\$" CHANGELOG.md || { echo "CHANGELOG.md has no '## $version' entry" >&2; exit 1; }
+
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check-pack
+      # prepack rebuilds dist/ as part of publish.
+      - run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
