@@ -228,7 +228,18 @@ button:hover, .button:hover, input[type='submit']:hover {
     background: var(--primary-button-hover-bgcolor);
     border: 2px solid var(--primary-button-hover-bordercolor);
     transform: translateY(-2px);
+    /* The default palette's glow, as a literal: what browsers without
+       color-mix() get. The palette-driven version is in the @supports block
+       below rather than a second declaration here, because Tailwind and
+       Lightning CSS polyfill a bare color-mix() with a fallback that drops
+       the alpha, which old browsers would paint as a solid orange shadow. */
     box-shadow: 0 10px 24px -8px rgba(225, 116, 14, .45);
+}
+
+@supports (color: color-mix(in srgb, red, red)) {
+    button:hover, .button:hover, input[type='submit']:hover {
+        box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--brand-accent) 45%, transparent);
+    }
 }
 
 button:focus-visible, .button:focus-visible, input[type='submit']:focus-visible {
@@ -474,8 +485,16 @@ label.checkbox {
     inset: -12% 0;
     z-index: -1;
     pointer-events: none;
+    /* Literal default, palette version under @supports: same reason as
+       button:hover's shadow. */
     background: radial-gradient(46% 55% at 56% 42%, rgba(247, 148, 32, .35), rgba(225, 116, 14, .12) 45%, transparent 70%);
     filter: blur(24px);
+}
+
+@supports (color: color-mix(in srgb, red, red)) {
+    .hero-glow {
+        background: radial-gradient(46% 55% at 56% 42%, color-mix(in srgb, var(--brand-accent-light) 35%, transparent), color-mix(in srgb, var(--brand-accent) 12%, transparent) 45%, transparent 70%);
+    }
 }
 
 @media (max-width: 720px) {

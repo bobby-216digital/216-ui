@@ -28,3 +28,4 @@ jobs:
       # unless the tarball holds only dist/, package.json, README.md and
       # CHANGELOG.md.
       - run: npm run check-pack
+      - run: npm run check-palette
