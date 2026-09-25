@@ -1,10 +1,10 @@
 /*
  * @216digital/ui design tokens — the 216digital values.
  *
- * Declared on `*`, not `:root`, to match the site exactly. That means every
- * element redeclares every token, so an override set on a wrapper element
- * does not cascade to its descendants; moving these to `:root` is planned as
- * its own release once the site runs on this package.
+ * Declared on `:root`. Every color below derives from the BRAND PALETTE
+ * block at the top, which is the one thing a consumer overrides to theme the
+ * design system (see src/palette.ts, which mirrors it and must stay in sync;
+ * scripts/check-palette.mjs enforces that).
  *
  * The fonts are the consumer's: these alias --font-sen / --font-roboto,
  * which the consumer sets on <html> (216-mono does it with next/font).
@@ -15,7 +15,19 @@
 
 /* GLOBAL VARS */
 
-* {
+:root {
+    /* BRAND PALETTE — the base colors. Override these, not the tokens that
+       derive from them. Mirrored in src/palette.ts with each color's usage
+       and the contrast pairings it has to pass. */
+    --brand-accent: #e1740e;
+    --brand-accent-light: #f79420;
+    --brand-accent-deep: #7a4419;
+    --brand-accent-text: #b85c0a;
+    --brand-text: #231f20;
+    --brand-text-muted: #685e5e;
+    --brand-text-subtle: #746d6b;
+    --brand-tint: #fff1e2;
+
     /* BREAKPOINTS */
     --mobile: 720px;
     --tablet: 900px;
@@ -23,11 +35,11 @@
     --mobile: 720px;
     --tablet: 900px;
     --primary-bg-color: #fff;
-    --secondary-bg-color: #fff1e2;
+    --secondary-bg-color: var(--brand-tint);
     --tertiary-bg-color: #f1fdff;
     --card-shadow-color: #979797;
-    --primary-accent-color: #e1740e;
-    --secondary-accent-color: #f79420;
+    --primary-accent-color: var(--brand-accent);
+    --secondary-accent-color: var(--brand-accent-light);
     /* Deep umber/terracotta — the modernization pass's one new accent hue.
        Deliberately kept in the same warm family as the orange tokens above
        rather than reaching for a cool color (teal/blue): a cool accent is
@@ -35,14 +47,14 @@
        is not trying to look like, even used sparingly. Verified against
        WCAG AA: white icon/text on this fill is 7.87:1; as small text/stroke
        it's 7.87:1 on white and 7.09:1 on peach — comfortable either way. */
-    --tertiary-accent-color: #7a4419;
+    --tertiary-accent-color: var(--brand-accent-deep);
     /* CTA/hero-glow gradient. Hard constraint: anything using this keeps
        --primary-button-font-color (dark grey), never white — white text on
        either endpoint fails WCAG AA (2.28:1 on #f79420, 3.13:1 on #e1740e). */
-    --gradient-primary: linear-gradient(135deg, #f79420 0%, #e1740e 100%);
-    --dark-grey: #231f20;
-    --medium-grey: #685e5e;
-    --light-grey: #746d6b;
+    --gradient-primary: linear-gradient(135deg, var(--brand-accent-light) 0%, var(--brand-accent) 100%);
+    --dark-grey: var(--brand-text);
+    --medium-grey: var(--brand-text-muted);
+    --light-grey: var(--brand-text-subtle);
     --card-radius: 20px;
     /* Vertical rhythm for section-level components (Section, Steps, Hero) —
        the "generous whitespace" half of the modernization pass, distinct
@@ -66,15 +78,15 @@
     --secondary-font-family: var(--font-sen);
     --primary-body-size: 16px;
     --primary-body-family: var(--font-roboto);
-    --primary-body-color: #231f20;
+    --primary-body-color: var(--brand-text);
     --primary-body-spacing: 24px;
     --secondary-body-size: 14px;
     --secondary-body-family: var(--font-roboto);
-    --secondary-body-color: #746d6b;
+    --secondary-body-color: var(--brand-text-subtle);
     --secondary-body-spacing: 21px;
     --large-body-size: 20px;
     --large-body-family: var(--font-roboto);
-    --large-body-color: #685e5e;
+    --large-body-color: var(--brand-text-muted);
     --large-body-spacing: 30px;
     /* Responsive instead of a flat 48px — scales from 40px to 60px with the
        viewport. --h1-spacing is unitless (a ratio, not a px value) for the
@@ -82,15 +94,15 @@
        clamp()'d font-size, so it doesn't need its own second clamp. */
     --h1-size: clamp(2.5rem, 2rem + 2vw, 3.75rem);
     --h1-family: var(--font-sen);
-    --h1-color: #231f20;
+    --h1-color: var(--brand-text);
     --h1-spacing: 1.1;
     --h2-size: 36px;
     --h2-family: var(--font-sen);
-    --h2-color: #231f20;
+    --h2-color: var(--brand-text);
     --h2-spacing: 40px;
     --h3-size: 28px;
     --h3-family: var(--font-sen);
-    --h3-color: #231f20;
+    --h3-color: var(--brand-text);
     /* Was 54px against a 28px font — a line-height of ~1.93, so any h3 that
        wrapped left a gap wide enough to read as two separate headings. Most
        h3s on the site are FeatureCard titles, which take .subheading's
@@ -100,23 +112,23 @@
     --h3-spacing: 36px;
     --subheading-size: 20px;
     --subheading-family: var(--font-roboto);
-    --subheading-color: #685e5e;
+    --subheading-color: var(--brand-text-muted);
     --subheading-spacing: 30px;
     --quote-size: 20px;
     --quote-family: var(--font-roboto);
-    --quote-color: #746d6b;
+    --quote-color: var(--brand-text-subtle);
     --quote-spacing: 30px;
     --global-margin: 20px 24px 20px 24px;
     --global-padding: 24px 24px 24px 24px;
-    --primary-button-bgcolor: #f79420;
-    --primary-button-bordercolor: #f79420;
+    --primary-button-bgcolor: var(--brand-accent-light);
+    --primary-button-bordercolor: var(--brand-accent-light);
     --primary-button-radius: 24px;
     --primary-button-margin: 16px 0px;
     --primary-button-padding: 16px 16px 16px 16px;
-    --primary-button-font-color: #231f20;
+    --primary-button-font-color: var(--brand-text);
     --primary-button-font-family: var(--font-roboto);
     --primary-button-hover-bgcolor: #fff;
-    --primary-button-hover-bordercolor: #231f20;
+    --primary-button-hover-bordercolor: var(--brand-text);
     /* The brand orange darkened until it can carry 16px text at WCAG AA:
        4.59:1 on white, where #f79420 is 2.28:1 and #e1740e is 3.13:1 and
        both fail. Deliberately a BUTTON-scoped token, not a change to
@@ -125,7 +137,7 @@
        washes), which is almost everywhere it appears. This token exists
        only for the two places orange has to be legible text-sized: the
        secondary button's label and its outline. */
-    --button-orange: #b85c0a;
+    --button-orange: var(--brand-accent-text);
     --secondary-button-bgcolor: #fff;
     /* Was #231f20 (near-black), which is what made primary and secondary
        read as near-identical pills distinguished only by fill — the
@@ -140,13 +152,13 @@
     --secondary-button-padding: 16px 16px 16px 16px;
     --secondary-button-font-color: var(--button-orange);
     --secondary-button-font-family: var(--font-roboto);
-    --secondary-button-hover-bgcolor: #fff1e2;
+    --secondary-button-hover-bgcolor: var(--brand-tint);
     --secondary-button-hover-bordercolor: var(--button-orange);
-    --link-color: #231f20;
-    --input-border-color: #685e5e;
-    --input-placeholder-color: #685e5e;
-    --input-text-color: #231f20;
-    --input-label-color: #231f20;
+    --link-color: var(--brand-text);
+    --input-border-color: var(--brand-text-muted);
+    --input-placeholder-color: var(--brand-text-muted);
+    --input-text-color: var(--brand-text);
+    --input-label-color: var(--brand-text);
     --input-background-color: #fff;
     --input-border-radius: 16px;
     --input-margin: 16px 0px;

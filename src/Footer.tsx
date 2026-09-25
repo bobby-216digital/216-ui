@@ -113,7 +113,7 @@ export function Footer({
                 </div>
             </div>
 
-            <div className="text-center text-white p-4" style={{ backgroundColor: '#231f20' }}>
+            <div className="text-center text-white p-4" style={{ backgroundColor: 'var(--dark-grey)' }}>
                 Copyright © {new Date().getFullYear()} {copyrightHolder}. All Rights Reserved.
             </div>
         </footer>
