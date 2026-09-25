@@ -14,6 +14,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # Newer npm (bundled with current Node 24) rejects this lockfile's
+      # optional @emnapi/* entries in `npm ci`, though nothing is wrong with
+      # it. 216-mono hit the same thing; pin the npm the lockfile was made with.
+      - run: npm install -g npm@11.6.2
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
