@@ -25,6 +25,12 @@ type ContactFormProps = {
      * Omitted, this is an ordinary contact form.
      */
     asset?: string
+    /**
+     * Makes every field required, not just Name, Email and Website. Its
+     * label gets the same asterisk. For a form where the lead is the point,
+     * like a download traded for contact details.
+     */
+    requireAll?: boolean
 }
 
 type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
@@ -38,7 +44,7 @@ type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
  * typing leaves the field with no accessible name, which would be an odd
  * thing to ship on an accessibility company's own contact form.
  */
-export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset }: Readonly<ContactFormProps>) {
+export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false }: Readonly<ContactFormProps>) {
     const [state, setState] = useState<SubmitState>("idle")
     const websiteRef = useRef<HTMLInputElement>(null)
 
@@ -143,28 +149,28 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
                 <input type="text" name="name" required />
             </label>
             <label>
-                Title
-                <input type="text" name="title" autoComplete="organization-title" />
+                {requireAll ? "Title*" : "Title"}
+                <input type="text" name="title" autoComplete="organization-title" required={requireAll} />
             </label>
             <label>
-                Company
-                <input type="text" name="company" autoComplete="organization" />
+                {requireAll ? "Company*" : "Company"}
+                <input type="text" name="company" autoComplete="organization" required={requireAll} />
             </label>
             <label>
                 Email Address*
                 <input type="email" name="email" required />
             </label>
             <label>
-                Phone Number
-                <input type="tel" name="phone" />
+                {requireAll ? "Phone Number*" : "Phone Number"}
+                <input type="tel" name="phone" required={requireAll} />
             </label>
             <label>
                 Website URL*
                 <input type="url" name="website" required ref={websiteRef} />
             </label>
             <label>
-                Comments
-                <textarea name="comments" rows={4} />
+                {requireAll ? "Comments*" : "Comments"}
+                <textarea name="comments" rows={4} required={requireAll} />
             </label>
             {asset && <input type="hidden" name="asset" value={asset} />}
             {/* Honeypot: styled off-screen (not `display:none`, which some
