@@ -18,20 +18,27 @@ type ContactFormProps = {
     contactPhone?: { label: string, href: string }
     /** Who the consent line says will follow up. */
     organizationName: string
+    /**
+     * A file the endpoint emails back to the visitor on submit, for a
+     * "fill this in and we'll send you the guide" form. Opaque here: it is
+     * posted as the `asset` field and the endpoint decides what it names.
+     * Omitted, this is an ordinary contact form.
+     */
+    asset?: string
 }
 
-type SubmitState = "idle" | "submitting" | "success" | "error"
+type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
 
 /**
- * Same field set as the live site's old Contact Form 7 form
- * (Name/Company/Email/Phone/Website URL/Comments), now wired to a real
+ * The live site's old Contact Form 7 field set
+ * (Name/Company/Email/Phone/Website URL/Comments) plus Title, now wired to a real
  * backend (services/editor/app/api/contact/route.ts) instead of the
  * earlier stub. Labels are visible text, not placeholder-only, unlike the
  * live site's CF7 markup — a placeholder that disappears once you start
  * typing leaves the field with no accessible name, which would be an odd
  * thing to ship on an accessibility company's own contact form.
  */
-export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName }: Readonly<ContactFormProps>) {
+export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset }: Readonly<ContactFormProps>) {
     const [state, setState] = useState<SubmitState>("idle")
     const websiteRef = useRef<HTMLInputElement>(null)
 
@@ -78,16 +85,37 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
                 body: JSON.stringify(data),
             })
 
-            setState(response.ok ? "success" : "error")
+            if (!response.ok) {
+                setState("error")
+                return
+            }
+            // `assetSent` is only true once the endpoint has actually mailed
+            // the file, so the thank-you never claims a delivery that failed
+            // (the endpoint tells the team to send it by hand instead).
+            const body: unknown = await response.json().catch(() => null)
+            const sent = asset && typeof body === "object" && body !== null && (body as { assetSent?: unknown }).assetSent === true
+            setState(sent ? "sent" : "success")
         } catch {
             setState("error")
         }
     }
 
+    if (state === "sent") {
+        return (
+            <div className="card p-6 max-w-lg" role="status">
+                <p>Thanks! It&apos;s on its way to your inbox. If you don&apos;t see it in a few minutes, check your spam folder.</p>
+            </div>
+        )
+    }
+
     if (state === "success") {
         return (
-            <div className="card p-6 max-w-lg">
-                <p>Thanks for reaching out! We&apos;ll get back to you shortly.</p>
+            <div className="card p-6 max-w-lg" role="status">
+                <p>
+                    {asset
+                        ? "Thanks! We’ll email it to you shortly."
+                        : "Thanks for reaching out! We’ll get back to you shortly."}
+                </p>
             </div>
         )
     }
@@ -115,8 +143,12 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
                 <input type="text" name="name" required />
             </label>
             <label>
+                Title
+                <input type="text" name="title" autoComplete="organization-title" />
+            </label>
+            <label>
                 Company
-                <input type="text" name="company" />
+                <input type="text" name="company" autoComplete="organization" />
             </label>
             <label>
                 Email Address*
@@ -134,6 +166,7 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
                 Comments
                 <textarea name="comments" rows={4} />
             </label>
+            {asset && <input type="hidden" name="asset" value={asset} />}
             {/* Honeypot: styled off-screen (not `display:none`, which some
                 bots skip) rather than removed from the DOM, so a bot that
                 blindly fills every input still trips it. Real visitors
