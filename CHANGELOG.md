@@ -5,6 +5,12 @@ name or default is a breaking change for 216-mono. Stay on 0.x until the site
 has run on the package for a while and the sister brand has consumed it (in
 0.x, a breaking change bumps the minor version).
 
+## 0.3.1
+
+- **ContactForm `requireAll` prop.** Makes Title, Company, Phone and
+  Comments required as well, each with an asterisk on its label. Without it,
+  the form renders exactly as in 0.3.0.
+
 ## 0.3.0
 
 ContactForm can send a file back to the visitor, and asks for a title.
