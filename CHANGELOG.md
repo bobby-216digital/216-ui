@@ -5,6 +5,20 @@ name or default is a breaking change for 216-mono. Stay on 0.x until the site
 has run on the package for a while and the sister brand has consumed it (in
 0.x, a breaking change bumps the minor version).
 
+## 0.3.0
+
+ContactForm can send a file back to the visitor, and asks for a title.
+
+- **New `Title` field** (`name="title"`), between Name and Company. Breaking:
+  the form's markup changes, and an endpoint that rejects unknown fields now
+  receives one more. Company now has `autocomplete="organization"`.
+- **`asset` prop.** When set, the form posts it as a hidden `asset` field and
+  the endpoint is expected to email that file to the visitor. The endpoint
+  answers `{ "assetSent": true }` once it has, and the thank-you then says
+  it's on its way. Otherwise it says it will be emailed shortly, never
+  claiming a delivery that didn't happen. Without `asset`, nothing changes.
+- The thank-you message now has `role="status"`.
+
 ## 0.2.0
 
 Themeable colors. Renders the same as 0.1.0 at the default palette.
