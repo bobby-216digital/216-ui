@@ -37,6 +37,14 @@ type ContactFormProps = {
      * thanks.
      */
     followUp?: { lead: string, label: string, href: string }
+    /**
+     * Where to send the visitor once the endpoint accepts the submission,
+     * e.g. "/thank-you/". The page the form was on is left behind, so it
+     * can't keep inviting a submission that already happened, and analytics
+     * can count the thank-you page. Omitted, the form swaps itself for the
+     * inline thank-you below. An error still shows inline either way.
+     */
+    successHref?: string
 }
 
 type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
@@ -50,7 +58,7 @@ type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
  * typing leaves the field with no accessible name, which would be an odd
  * thing to ship on an accessibility company's own contact form.
  */
-export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false, followUp }: Readonly<ContactFormProps>) {
+export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false, followUp, successHref }: Readonly<ContactFormProps>) {
     const [state, setState] = useState<SubmitState>("idle")
     const websiteRef = useRef<HTMLInputElement>(null)
 
@@ -101,6 +109,12 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
             // `assetSent` is only true once the endpoint has actually mailed
             // the file, so the thank-you never claims a delivery that failed
             // (the endpoint tells the team to send it by hand instead).
+            if (successHref) {
+                // Stays "submitting" (button disabled) until the browser
+                // leaves, so a second click can't send it twice.
+                window.location.assign(successHref)
+                return
+            }
             const body: unknown = await response.json().catch(() => null)
             const sent = asset && typeof body === "object" && body !== null && (body as { assetSent?: unknown }).assetSent === true
             setState(sent ? "sent" : "success")
