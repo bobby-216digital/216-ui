@@ -5,6 +5,17 @@ name or default is a breaking change for 216-mono. Stay on 0.x until the site
 has run on the package for a while and the sister brand has consumed it (in
 0.x, a breaking change bumps the minor version).
 
+## 0.4.0
+
+- **ContactForm's Website URL field takes any text.** It's `type="text"` now
+  (with `autocomplete="url"`), not `type="url"`, so "example.com" or a store
+  name is accepted. Breaking: the input's markup changes, and an endpoint
+  that assumed a valid URL now gets whatever was typed. The `?website=`
+  prefill no longer adds `https://`.
+- **`followUp` prop:** `{ lead, label, href }`, rendered as a closing line
+  on every thank-you message (`lead`, then a link). Omitted, the thank-you
+  is unchanged.
+
 ## 0.3.1
 
 - **ContactForm `requireAll` prop.** Makes Title, Company, Phone and
