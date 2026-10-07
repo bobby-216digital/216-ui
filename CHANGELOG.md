@@ -15,6 +15,9 @@ has run on the package for a while and the sister brand has consumed it (in
 - **`followUp` prop:** `{ lead, label, href }`, rendered as a closing line
   on every thank-you message (`lead`, then a link). Omitted, the thank-you
   is unchanged.
+- **`successHref` prop:** after a successful submission, the browser goes
+  to that URL instead of showing the inline thank-you. Errors still show
+  inline. Omitted, nothing changes.
 
 ## 0.3.1
 
