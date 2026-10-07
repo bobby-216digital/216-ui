@@ -5,6 +5,13 @@ name or default is a breaking change for 216-mono. Stay on 0.x until the site
 has run on the package for a while and the sister brand has consumed it (in
 0.x, a breaking change bumps the minor version).
 
+## 0.4.1
+
+- **ContactForm `required` prop:** any combination of the optional fields
+  (`"title"`, `"company"`, `"phone"`, `"comments"`) to make required, each
+  with an asterisk. `requireAll` still makes all four required. Without
+  either, the form renders exactly as in 0.4.0.
+
 ## 0.4.0
 
 - **ContactForm's Website URL field takes any text.** It's `type="text"` now
