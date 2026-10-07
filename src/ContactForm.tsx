@@ -32,6 +32,12 @@ type ContactFormProps = {
      */
     requireAll?: boolean
     /**
+     * Optional fields to make required, any combination, e.g.
+     * `["company", "phone"]`, each with the same asterisk. Name, Email and
+     * Website are always required. `requireAll` still means all four.
+     */
+    required?: ReadonlyArray<OptionalField>
+    /**
      * A closing line on the thank-you message, e.g. an invitation to book a
      * call: `lead` text, then a link. Omitted, the thank-you is just the
      * thanks.
@@ -47,6 +53,8 @@ type ContactFormProps = {
     successHref?: string
 }
 
+type OptionalField = "title" | "company" | "phone" | "comments"
+
 type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
 
 /**
@@ -58,8 +66,9 @@ type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
  * typing leaves the field with no accessible name, which would be an odd
  * thing to ship on an accessibility company's own contact form.
  */
-export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false, followUp, successHref }: Readonly<ContactFormProps>) {
+export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false, required = [], followUp, successHref }: Readonly<ContactFormProps>) {
     const [state, setState] = useState<SubmitState>("idle")
+    const isRequired = (field: OptionalField) => requireAll || required.includes(field)
     const websiteRef = useRef<HTMLInputElement>(null)
 
     /**
@@ -175,28 +184,28 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
                 <input type="text" name="name" required />
             </label>
             <label>
-                {requireAll ? "Title*" : "Title"}
-                <input type="text" name="title" autoComplete="organization-title" required={requireAll} />
+                {isRequired("title") ? "Title*" : "Title"}
+                <input type="text" name="title" autoComplete="organization-title" required={isRequired("title")} />
             </label>
             <label>
-                {requireAll ? "Company*" : "Company"}
-                <input type="text" name="company" autoComplete="organization" required={requireAll} />
+                {isRequired("company") ? "Company*" : "Company"}
+                <input type="text" name="company" autoComplete="organization" required={isRequired("company")} />
             </label>
             <label>
                 Email Address*
                 <input type="email" name="email" required />
             </label>
             <label>
-                {requireAll ? "Phone Number*" : "Phone Number"}
-                <input type="tel" name="phone" required={requireAll} />
+                {isRequired("phone") ? "Phone Number*" : "Phone Number"}
+                <input type="tel" name="phone" required={isRequired("phone")} />
             </label>
             <label>
                 Website URL*
                 <input type="text" name="website" required ref={websiteRef} autoComplete="url" />
             </label>
             <label>
-                {requireAll ? "Comments*" : "Comments"}
-                <textarea name="comments" rows={4} required={requireAll} />
+                {isRequired("comments") ? "Comments*" : "Comments"}
+                <textarea name="comments" rows={4} required={isRequired("comments")} />
             </label>
             {asset && <input type="hidden" name="asset" value={asset} />}
             {/* Honeypot: styled off-screen (not `display:none`, which some
