@@ -31,6 +31,12 @@ type ContactFormProps = {
      * like a download traded for contact details.
      */
     requireAll?: boolean
+    /**
+     * A closing line on the thank-you message, e.g. an invitation to book a
+     * call: `lead` text, then a link. Omitted, the thank-you is just the
+     * thanks.
+     */
+    followUp?: { lead: string, label: string, href: string }
 }
 
 type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
@@ -44,7 +50,7 @@ type SubmitState = "idle" | "submitting" | "success" | "sent" | "error"
  * typing leaves the field with no accessible name, which would be an odd
  * thing to ship on an accessibility company's own contact form.
  */
-export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false }: Readonly<ContactFormProps>) {
+export function ContactForm({ heading, endpoint, contactEmail, contactPhone, organizationName, asset, requireAll = false, followUp }: Readonly<ContactFormProps>) {
     const [state, setState] = useState<SubmitState>("idle")
     const websiteRef = useRef<HTMLInputElement>(null)
 
@@ -66,16 +72,13 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
      * field for no gain, and setting it in an effect means a second render
      * pass on every mount whether there is a query string or not.
      *
-     * The scheme is added if it's missing because this input is `type="url"`,
-     * which rejects a bare "www.example.com" — the band's own field is
-     * deliberately `type="text"` so it accepts however someone types their
-     * address, and this is where that gets normalised into something the
-     * stricter field will take.
+     * Copied as typed: the field is `type="text"`, like the band's, so it
+     * takes "example.com" or "our Shopify store" as readily as a full URL.
      */
     useEffect(() => {
         const raw = new URLSearchParams(window.location.search).get("website")?.trim()
         if (!raw || !websiteRef.current) return
-        websiteRef.current.value = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+        websiteRef.current.value = raw
     }, [])
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -106,10 +109,18 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
         }
     }
 
+    const followUpLine = followUp && (
+        <p>
+            {`${followUp.lead} `}
+            <a href={followUp.href}>{followUp.label}</a>.
+        </p>
+    )
+
     if (state === "sent") {
         return (
             <div className="card p-6 max-w-lg" role="status">
                 <p>Thanks! It&apos;s on its way to your inbox. If you don&apos;t see it in a few minutes, check your spam folder.</p>
+                {followUpLine}
             </div>
         )
     }
@@ -122,6 +133,7 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
                         ? "Thanks! We’ll email it to you shortly."
                         : "Thanks for reaching out! We’ll get back to you shortly."}
                 </p>
+                {followUpLine}
             </div>
         )
     }
@@ -166,7 +178,7 @@ export function ContactForm({ heading, endpoint, contactEmail, contactPhone, org
             </label>
             <label>
                 Website URL*
-                <input type="url" name="website" required ref={websiteRef} />
+                <input type="text" name="website" required ref={websiteRef} autoComplete="url" />
             </label>
             <label>
                 {requireAll ? "Comments*" : "Comments"}
